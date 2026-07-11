@@ -100,7 +100,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
         email,
         password,
         options: {
-          emailRedirectTo: `${window.location.origin}/auth/callback`,
+          emailRedirectTo: `https://shoppdropp-blueprint.vercel.app/auth/callback`,
         },
       });
       return { data, error };
@@ -115,7 +115,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
       const { error } = await supabaseRef.current.auth.signInWithOtp({
         email,
         options: {
-          emailRedirectTo: `${window.location.origin}/auth/callback`,
+          emailRedirectTo: `https://shoppdropp-blueprint.vercel.app/auth/callback`,
         },
       });
       return { error };
