@@ -75,20 +75,20 @@ export function AgentVisualization() {
               <Brain className="w-5 h-5 text-white" />
             </div>
             <div>
-              <h3 className="font-semibold text-white">AI Agent Status</h3>
-              <p className="text-sm text-green-400 flex items-center gap-1">
-                <span className="w-2 h-2 rounded-full bg-green-400 animate-pulse" />
+              <h3 className="font-semibold text-foreground">AI Agent Status</h3>
+              <p className="text-sm text-green-600 dark:text-green-400 flex items-center gap-1">
+                <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
                 Autonomous Mode Active
               </p>
             </div>
           </div>
-          <div className="flex items-center gap-4 text-sm text-slate-400">
+          <div className="flex items-center gap-4 text-sm text-muted-foreground">
             <span className="flex items-center gap-1">
               <Clock className="w-4 h-4" />
               Uptime: 99.9%
             </span>
             <span className="flex items-center gap-1">
-              <Zap className="w-4 h-4 text-amber-400" />
+              <Zap className="w-4 h-4 text-amber-500" />
               Last action: 2s ago
             </span>
           </div>
@@ -110,7 +110,7 @@ export function AgentVisualization() {
                   opacity: isCompleted ? 0.6 : 1,
                 }}
                 className={`relative flex flex-col items-center gap-2 p-3 rounded-xl transition-all ${
-                  isActive ? "bg-white/5" : ""
+                  isActive ? "bg-secondary" : ""
                 }`}
               >
                 <div
@@ -119,18 +119,18 @@ export function AgentVisualization() {
                       ? `bg-gradient-to-br ${step.color} shadow-lg shadow-violet-500/25`
                       : isCompleted
                       ? "bg-green-500/20"
-                      : "bg-white/5"
+                      : "bg-secondary"
                   }`}
                 >
                   {isCompleted ? (
-                    <CheckCircle2 className="w-6 h-6 text-green-400" />
+                    <CheckCircle2 className="w-6 h-6 text-green-600 dark:text-green-400" />
                   ) : (
-                    <Icon className={`w-6 h-6 ${isActive ? "text-white" : "text-slate-400"}`} />
+                    <Icon className={`w-6 h-6 ${isActive ? "text-white" : "text-muted-foreground"}`} />
                   )}
                 </div>
                 <span
                   className={`text-xs text-center ${
-                    isActive ? "text-white font-medium" : "text-slate-500"
+                    isActive ? "text-foreground font-medium" : "text-muted-foreground"
                   }`}
                 >
                   {step.label}
@@ -148,9 +148,9 @@ export function AgentVisualization() {
         </div>
 
         {/* Activity Log */}
-        <div className="bg-black/30 rounded-xl p-4 font-mono text-sm">
-          <div className="flex items-center gap-2 mb-3 text-slate-400 text-xs uppercase tracking-wider">
-            <div className="w-2 h-2 rounded-full bg-green-400 animate-pulse" />
+        <div className="bg-secondary/80 dark:bg-black/30 rounded-xl p-4 font-mono text-sm">
+          <div className="flex items-center gap-2 mb-3 text-muted-foreground text-xs uppercase tracking-wider">
+            <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
             Live Activity Log
           </div>
           <div className="space-y-2 h-32 overflow-hidden">
@@ -160,9 +160,9 @@ export function AgentVisualization() {
                 initial={{ opacity: 0, x: -20 }}
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ delay: index * 0.1 }}
-                className="flex items-center gap-2 text-slate-300"
+                className="flex items-center gap-2 text-foreground"
               >
-                <span className="text-violet-400">[{new Date().toLocaleTimeString()}]</span>
+                <span className="text-violet-600 dark:text-violet-400">[{new Date().toLocaleTimeString()}]</span>
                 <span>{log}</span>
               </motion.div>
             ))}
@@ -170,18 +170,18 @@ export function AgentVisualization() {
         </div>
 
         {/* Stats */}
-        <div className="grid grid-cols-3 gap-4 mt-6 pt-6 border-t border-white/10">
+        <div className="grid grid-cols-3 gap-4 mt-6 pt-6 border-t border-border">
           <div className="text-center">
-            <p className="text-2xl font-bold text-white">24/7</p>
-            <p className="text-xs text-slate-500">Autonomous Operation</p>
+            <p className="text-2xl font-bold text-foreground">24/7</p>
+            <p className="text-xs text-muted-foreground">Autonomous Operation</p>
           </div>
           <div className="text-center">
-            <p className="text-2xl font-bold text-white">1,247</p>
-            <p className="text-xs text-slate-500">Products Managed</p>
+            <p className="text-2xl font-bold text-foreground">1,247</p>
+            <p className="text-xs text-muted-foreground">Products Managed</p>
           </div>
           <div className="text-center">
-            <p className="text-2xl font-bold text-green-400">+34%</p>
-            <p className="text-xs text-slate-500">Avg. Conversion Lift</p>
+            <p className="text-2xl font-bold text-green-600 dark:text-green-400">+34%</p>
+            <p className="text-xs text-muted-foreground">Avg. Conversion Lift</p>
           </div>
         </div>
       </div>

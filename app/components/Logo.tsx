@@ -24,23 +24,38 @@ export function ShoppDroppLogo({ className = "", size = 40 }: LogoProps) {
           <stop offset="100%" stopColor="#ec4899" />
         </linearGradient>
       </defs>
-      <rect width="40" height="40" rx="10" fill="url(#logoGradient)" />
+      {/* Shopping bag shape */}
       <path
-        d="M12 14h16M12 20h12M12 26h8"
-        stroke="white"
-        strokeWidth="2.5"
+        d="M8 12C8 10.8954 8.89543 10 10 10H30C31.1046 10 32 10.8954 32 12V32C32 33.1046 31.1046 34 30 34H10C8.89543 34 8 33.1046 8 32V12Z"
+        fill="url(#logoGradient)"
+      />
+      {/* Bag handle */}
+      <path
+        d="M14 10V8C14 5.79086 15.7909 4 18 4H22C24.2091 4 26 5.79086 26 8V10"
+        stroke="url(#logoGradient)"
+        strokeWidth="3"
         strokeLinecap="round"
       />
-      <circle cx="28" cy="26" r="4" fill="white" />
+      {/* AI/tech indicator dot */}
+      <circle cx="28" cy="16" r="3" fill="white" />
     </motion.svg>
   );
 }
 
 export function ShoppDroppText({ className = "" }: { className?: string }) {
   return (
-    <span className={`font-bold text-xl ${className}`}>
-      <span className="text-white">Shopp</span>
-      <span className="text-[#ec4899]">Dropp</span>
+    <span className={`font-bold text-xl tracking-tight ${className}`}>
+      <span className="text-white">SHOPP</span>
+      <span className="text-[#ec4899]">DROPP</span>
+    </span>
+  );
+}
+
+export function ShoppDroppTextLight({ className = "" }: { className?: string }) {
+  return (
+    <span className={`font-bold text-xl tracking-tight ${className}`}>
+      <span className="text-slate-900">SHOPP</span>
+      <span className="text-[#ec4899]">DROPP</span>
     </span>
   );
 }
