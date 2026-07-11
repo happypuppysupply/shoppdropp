@@ -2,30 +2,32 @@
 
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { X, Mail, Lock, User, Eye, EyeOff, Loader2 } from "lucide-react";
+import { X, Mail, Lock, User, Eye, EyeOff, Loader2, Sparkles } from "lucide-react";
 import { useAuth } from "../hooks/useAuth";
 
 interface AuthModalProps {
   isOpen: boolean;
   onClose: () => void;
-  defaultMode?: "signin" | "signup";
+  defaultMode?: "signin" | "signup" | "magic";
 }
 
 export function AuthModal({ isOpen, onClose, defaultMode = "signin" }: AuthModalProps) {
-  const [mode, setMode] = useState<"signin" | "signup">(defaultMode);
+  const [mode, setMode] = useState<"signin" | "signup" | "magic">(defaultMode);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [magicLinkSent, setMagicLinkSent] = useState(false);
 
-  const { signInWithEmail, signUpWithEmail } = useAuth();
+  const { signInWithEmail, signUpWithEmail, signInWithMagicLink } = useAuth();
 
   const resetForm = () => {
     setEmail("");
     setPassword("");
     setError(null);
     setShowPassword(false);
+    setMagicLinkSent(false);
   };
 
   const handleClose = () => {
@@ -33,7 +35,7 @@ export function AuthModal({ isOpen, onClose, defaultMode = "signin" }: AuthModal
     onClose();
   };
 
-  const handleSwitchMode = (newMode: "signin" | "signup") => {
+  const handleSwitchMode = (newMode: "signin" | "signup" | "magic") => {
     setMode(newMode);
     resetForm();
   };
@@ -52,12 +54,19 @@ export function AuthModal({ isOpen, onClose, defaultMode = "signin" }: AuthModal
           handleClose();
           window.location.href = "/dashboard";
         }
-      } else {
+      } else if (mode === "signup") {
         const { error } = await signUpWithEmail(email, password);
         if (error) {
           setError(error.message);
         } else {
           setError("Check your email for a confirmation link!");
+        }
+      } else if (mode === "magic") {
+        const { error } = await signInWithMagicLink(email);
+        if (error) {
+          setError(error.message);
+        } else {
+          setMagicLinkSent(true);
         }
       }
     } catch (err) {
@@ -66,6 +75,51 @@ export function AuthModal({ isOpen, onClose, defaultMode = "signin" }: AuthModal
       setIsLoading(false);
     }
   };
+
+  // Show magic link success state
+  if (magicLinkSent) {
+    return (
+      <AnimatePresence>
+        {isOpen && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.2 }}
+            className="fixed inset-0 z-50 flex items-center justify-center p-4"
+            onClick={handleClose}
+          >
+            <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" />
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 20 }}
+              transition={{ duration: 0.25, ease: "easeOut" }}
+              onClick={(e) => e.stopPropagation()}
+              className="relative w-full max-w-md overflow-hidden rounded-2xl border border-white/10 bg-[#111118] shadow-2xl p-8 text-center"
+            >
+              <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-violet-500 via-pink-500 to-blue-500" />
+              <div className="mb-6 flex justify-center">
+                <div className="w-16 h-16 rounded-full bg-emerald-500/20 flex items-center justify-center">
+                  <Mail size={32} className="text-emerald-400" />
+                </div>
+              </div>
+              <h2 className="text-2xl font-bold gradient-text mb-4">Check Your Email</h2>
+              <p className="text-white/70 mb-6">
+                We sent a magic link to <span className="text-white font-medium">{email}</span>. Click the link to sign in instantly.
+              </p>
+              <button
+                onClick={handleClose}
+                className="w-full rounded-xl bg-white/10 py-3 text-sm font-medium text-white hover:bg-white/20 transition-colors"
+              >
+                Got it
+              </button>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    );
+  }
 
   return (
     <AnimatePresence>
@@ -107,13 +161,15 @@ export function AuthModal({ isOpen, onClose, defaultMode = "signin" }: AuthModal
               <div className="mb-8 text-center">
                 <h2 className="text-2xl font-bold">
                   <span className="gradient-text">
-                    {mode === "signin" ? "Welcome Back" : "Create Account"}
+                    {mode === "signin" && "Welcome Back"}
+                    {mode === "signup" && "Create Account"}
+                    {mode === "magic" && "Magic Link Login"}
                   </span>
                 </h2>
                 <p className="mt-2 text-sm text-white/50">
-                  {mode === "signin"
-                    ? "Sign in to access your AI-powered store"
-                    : "Get started with ShoppDropp today"}
+                  {mode === "signin" && "Sign in to access your AI-powered store"}
+                  {mode === "signup" && "Get started with ShoppDropp today"}
+                  {mode === "magic" && "No password needed. We'll email you a link."}
                 </p>
               </div>
 
@@ -139,6 +195,17 @@ export function AuthModal({ isOpen, onClose, defaultMode = "signin" }: AuthModal
                 >
                   Sign Up
                 </button>
+                <button
+                  onClick={() => handleSwitchMode("magic")}
+                  className={`flex-1 rounded-lg py-2.5 text-sm font-medium transition-all flex items-center justify-center gap-1 ${
+                    mode === "magic"
+                      ? "bg-gradient-to-r from-violet-600 to-pink-600 text-white shadow-lg"
+                      : "text-white/50 hover:text-white"
+                  }`}
+                >
+                  <Sparkles size={14} />
+                  Magic
+                </button>
               </div>
 
               {/* Email Form */}
@@ -158,28 +225,30 @@ export function AuthModal({ isOpen, onClose, defaultMode = "signin" }: AuthModal
                   />
                 </div>
 
-                <div className="relative">
-                  <Lock
-                    size={18}
-                    className="absolute left-3 top-1/2 -translate-y-1/2 text-white/30"
-                  />
-                  <input
-                    type={showPassword ? "text" : "password"}
-                    placeholder="Password"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    required
-                    minLength={6}
-                    className="w-full rounded-xl border border-white/10 bg-white/5 py-3 pl-10 pr-10 text-sm text-white placeholder-white/30 outline-none transition-all focus:border-violet-500/50 focus:ring-2 focus:ring-violet-500/20"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-white/30 transition-colors hover:text-white/60"
-                  >
-                    {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
-                  </button>
-                </div>
+                {mode !== "magic" && (
+                  <div className="relative">
+                    <Lock
+                      size={18}
+                      className="absolute left-3 top-1/2 -translate-y-1/2 text-white/30"
+                    />
+                    <input
+                      type={showPassword ? "text" : "password"}
+                      placeholder="Password"
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      required
+                      minLength={6}
+                      className="w-full rounded-xl border border-white/10 bg-white/5 py-3 pl-10 pr-10 text-sm text-white placeholder-white/30 outline-none transition-all focus:border-violet-500/50 focus:ring-2 focus:ring-violet-500/20"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword(!showPassword)}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-white/30 transition-colors hover:text-white/60"
+                    >
+                      {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                    </button>
+                  </div>
+                )}
 
                 {error && (
                   <motion.p
@@ -203,6 +272,11 @@ export function AuthModal({ isOpen, onClose, defaultMode = "signin" }: AuthModal
                   <span className="relative z-10 flex items-center justify-center gap-2">
                     {isLoading ? (
                       <Loader2 size={18} className="animate-spin" />
+                    ) : mode === "magic" ? (
+                      <>
+                        <Sparkles size={18} />
+                        Send Magic Link
+                      </>
                     ) : mode === "signin" ? (
                       <>
                         <User size={18} />

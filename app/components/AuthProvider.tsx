@@ -17,6 +17,7 @@ interface AuthContextType {
   isAuthenticated: boolean;
   signInWithEmail: (email: string, password: string) => Promise<{ error: AuthError | null }>;
   signUpWithEmail: (email: string, password: string) => Promise<{ error: AuthError | null; data: any }>;
+  signInWithMagicLink: (email: string) => Promise<{ error: AuthError | null }>;
   signInWithGoogle: () => Promise<void>;
   signOut: () => Promise<void>;
 }
@@ -107,6 +108,21 @@ export function AuthProvider({ children }: AuthProviderProps) {
     []
   );
 
+  const signInWithMagicLink = useCallback(
+    async (email: string) => {
+      if (!supabaseRef.current) return { error: new Error("Supabase not initialized") as AuthError };
+      
+      const { error } = await supabaseRef.current.auth.signInWithOtp({
+        email,
+        options: {
+          emailRedirectTo: `${window.location.origin}/auth/callback`,
+        },
+      });
+      return { error };
+    },
+    []
+  );
+
   const signInWithGoogle = useCallback(async () => {
     if (!supabaseRef.current) return;
     
@@ -130,6 +146,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
     isAuthenticated: !!user,
     signInWithEmail,
     signUpWithEmail,
+    signInWithMagicLink,
     signInWithGoogle,
     signOut,
   };
