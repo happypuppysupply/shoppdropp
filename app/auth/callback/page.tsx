@@ -60,6 +60,19 @@ function AuthCallbackContent() {
         return;
       }
 
+      // Wait a moment for Supabase to process any pending auth state (magic links)
+      await new Promise(resolve => setTimeout(resolve, 500));
+
+      // First check if user is already logged in (magic links set this automatically)
+      const { data: { user }, error: userError } = await supabaseRef.current.auth.getUser();
+      
+      if (user) {
+        setStatus("success");
+        setMessage("Signed in! Redirecting to dashboard...");
+        setTimeout(() => router.push("/dashboard"), 1000);
+        return;
+      }
+
       // Check for auth code (Supabase sends this for email confirmations and OAuth)
       const code = searchParams.get("code");
       
@@ -117,17 +130,8 @@ function AuthCallbackContent() {
         }
       }
 
-      // If no token or code, just check if user is already logged in
-      const { data: { user } } = await supabaseRef.current.auth.getUser();
-      
-      if (user) {
-        setStatus("success");
-        setMessage("Already signed in! Redirecting...");
-        setTimeout(() => router.push("/dashboard"), 1000);
-      } else {
-        // No auth data, redirect home
-        router.push("/");
-      }
+      // No auth data, redirect home
+      router.push("/");
     };
 
     handleAuthCallback();
