@@ -46,6 +46,9 @@ function AuthCallbackContent() {
     const handleAuthCallback = async () => {
       if (!supabaseRef.current) return;
       
+      // Debug: log all search params
+      console.log("Auth callback params:", Object.fromEntries(searchParams.entries()));
+      
       // Check for error in URL
       const error = searchParams.get("error");
       const errorDescription = searchParams.get("error_description");
@@ -57,7 +60,33 @@ function AuthCallbackContent() {
         return;
       }
 
-      // Check for confirmation token (email confirmation)
+      // Check for auth code (Supabase sends this for email confirmations and OAuth)
+      const code = searchParams.get("code");
+      
+      if (code) {
+        try {
+          const { error: sessionError } = await supabaseRef.current.auth.exchangeCodeForSession(code);
+          
+          if (sessionError) {
+            setStatus("error");
+            setMessage(sessionError.message);
+            setTimeout(() => router.push("/"), 3000);
+            return;
+          }
+          
+          setStatus("success");
+          setMessage("Email confirmed! Redirecting to dashboard...");
+          setTimeout(() => router.push("/dashboard"), 1500);
+          return;
+        } catch (err) {
+          setStatus("error");
+          setMessage("Failed to complete sign in");
+          setTimeout(() => router.push("/"), 3000);
+          return;
+        }
+      }
+
+      // Check for confirmation token (legacy email confirmation)
       const token = searchParams.get("token");
       const type = searchParams.get("type");
       
@@ -83,32 +112,6 @@ function AuthCallbackContent() {
         } catch (err) {
           setStatus("error");
           setMessage("Failed to verify email");
-          setTimeout(() => router.push("/"), 3000);
-          return;
-        }
-      }
-
-      // Check for auth code (OAuth or magic link)
-      const code = searchParams.get("code");
-      
-      if (code) {
-        try {
-          const { error: sessionError } = await supabaseRef.current.auth.exchangeCodeForSession(code);
-          
-          if (sessionError) {
-            setStatus("error");
-            setMessage(sessionError.message);
-            setTimeout(() => router.push("/"), 3000);
-            return;
-          }
-          
-          setStatus("success");
-          setMessage("Signed in! Redirecting to dashboard...");
-          setTimeout(() => router.push("/dashboard"), 1500);
-          return;
-        } catch (err) {
-          setStatus("error");
-          setMessage("Failed to complete sign in");
           setTimeout(() => router.push("/"), 3000);
           return;
         }
