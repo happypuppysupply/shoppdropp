@@ -12,7 +12,8 @@ import {
   LogOut, 
   User,
   Sparkles,
-  Plus
+  Plus,
+  X
 } from "lucide-react";
 import Link from "next/link";
 
@@ -20,6 +21,7 @@ export default function DashboardPage() {
   const router = useRouter();
   const { user, isAuthenticated, isLoading, signOut } = useAuth();
   const [activeTab, setActiveTab] = useState("overview");
+  const [showAddStore, setShowAddStore] = useState(false);
 
   // Redirect to home if not authenticated
   useEffect(() => {
@@ -214,7 +216,11 @@ export default function DashboardPage() {
             <div className="glass rounded-2xl p-6 border border-white/10">
               <h3 className="font-semibold mb-4">Quick Actions</h3>
               <div className="space-y-2">
-                <QuickAction icon={<Store size={18} />} label="Connect Shopify Store" />
+                <QuickAction 
+                  icon={<Store size={18} />} 
+                  label="Connect Shopify Store" 
+                  onClick={() => setShowAddStore(true)}
+                />
                 <QuickAction icon={<Settings size={18} />} label="API Settings" />
                 <QuickAction icon={<BarChart3 size={18} />} label="View Analytics" />
               </div>
@@ -230,6 +236,8 @@ export default function DashboardPage() {
           </motion.div>
         </div>
       </main>
+
+      <AddStoreModal isOpen={showAddStore} onClose={() => setShowAddStore(false)} />
     </div>
   );
 }
@@ -268,10 +276,99 @@ function StatCard({
   );
 }
 
-// Quick Action Component
-function QuickAction({ icon, label }: { icon: React.ReactNode; label: string }) {
+// Store Modal Component
+function AddStoreModal({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) {
+  const [storeName, setStoreName] = useState("");
+  const [storeUrl, setStoreUrl] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [error, setError] = useState("");
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsSubmitting(true);
+    setError("");
+    
+    // Simulate store creation - in production this would call the backend API
+    await new Promise(resolve => setTimeout(resolve, 1500));
+    
+    setIsSubmitting(false);
+    onClose();
+    alert(`Store "${storeName}" added successfully! In production, this would provision a worker and start automation.`);
+  };
+
+  if (!isOpen) return null;
+
   return (
-    <button className="w-full flex items-center gap-3 p-3 rounded-lg text-sm text-white/70 hover:bg-white/5 transition-colors">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+      <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
+      <motion.div
+        initial={{ opacity: 0, scale: 0.95 }}
+        animate={{ opacity: 1, scale: 1 }}
+        className="relative w-full max-w-md overflow-hidden rounded-2xl border border-white/10 bg-[#111118] shadow-2xl p-6"
+      >
+        <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-violet-500 via-pink-500 to-blue-500" />
+        
+        <div className="flex items-center justify-between mb-6">
+          <h2 className="text-xl font-bold gradient-text">Connect Shopify Store</h2>
+          <button onClick={onClose} className="text-white/50 hover:text-white">
+            <X size={20} />
+          </button>
+        </div>
+
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div>
+            <label className="block text-sm text-white/70 mb-1">Store Name</label>
+            <input
+              type="text"
+              value={storeName}
+              onChange={(e) => setStoreName(e.target.value)}
+              placeholder="My Shopify Store"
+              required
+              className="w-full rounded-xl border border-white/10 bg-white/5 py-3 px-4 text-sm text-white placeholder-white/30 outline-none focus:border-violet-500/50"
+            />
+          </div>
+          
+          <div>
+            <label className="block text-sm text-white/70 mb-1">Shopify Store URL</label>
+            <input
+              type="url"
+              value={storeUrl}
+              onChange={(e) => setStoreUrl(e.target.value)}
+              placeholder="https://my-store.myshopify.com"
+              required
+              className="w-full rounded-xl border border-white/10 bg-white/5 py-3 px-4 text-sm text-white placeholder-white/30 outline-none focus:border-violet-500/50"
+            />
+          </div>
+
+          {error && <p className="text-red-400 text-sm">{error}</p>}
+
+          <button
+            type="submit"
+            disabled={isSubmitting}
+            className="w-full py-3 rounded-xl bg-gradient-to-r from-violet-600 to-pink-600 text-white font-semibold hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50 transition-all"
+          >
+            {isSubmitting ? (
+              <span className="flex items-center justify-center gap-2">
+                <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                Connecting...
+              </span>
+            ) : (
+              "Connect Store"
+            )}
+          </button>
+        </form>
+      </motion.div>
+    </div>
+  );
+}
+
+// Quick Action Component
+function QuickAction({ icon, label, onClick }: { icon: React.ReactNode; label: string; onClick?: () => void }) {
+  return (
+    <button 
+      onClick={onClick}
+      className="w-full flex items-center gap-3 p-3 rounded-lg text-sm text-white/70 hover:bg-white/5 transition-colors"
+    >
       <span className="text-violet-400">{icon}</span>
       {label}
     </button>
