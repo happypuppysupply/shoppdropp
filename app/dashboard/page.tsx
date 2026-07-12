@@ -1,41 +1,73 @@
-"use client";
+'use client'
 
-import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
-import { motion } from "framer-motion";
-import { useAuth } from "../hooks/useAuth";
-import { 
-  Store, 
-  Settings, 
-  BarChart3, 
-  Package, 
-  LogOut, 
-  User,
-  Sparkles,
-  Plus,
-  X
-} from "lucide-react";
-import Link from "next/link";
+import { useEffect, useState } from 'react'
+import { useRouter } from 'next/navigation'
+import { Card, CardContent } from '@/components/ui/card'
+import { Button } from '@/components/ui/button'
+import { Store, Plus, ExternalLink, Settings, Sparkles, LogOut, User, Brain, Target, RefreshCw, TrendingUp, MessageCircle, Play, Pause, CheckCircle } from 'lucide-react'
+import { useAuth } from '../hooks/useAuth'
+import { api } from '@/lib/api'
+import { AddStoreModal } from '@/components/dashboard/AddStoreModal'
+import { StoreDetailsModal } from '@/components/dashboard/StoreDetailsModal'
+
+interface StoreData {
+  id: string
+  name: string
+  url: string
+  status: 'pending' | 'provisioning' | 'active' | 'error'
+  worker_id: string | null
+  created_at: string
+}
 
 export default function DashboardPage() {
-  const router = useRouter();
-  const { user, isAuthenticated, isLoading, signOut } = useAuth();
-  const [activeTab, setActiveTab] = useState("overview");
-  const [showAddStore, setShowAddStore] = useState(false);
+  const router = useRouter()
+  const { user, isAuthenticated, isLoading, signOut } = useAuth()
+  const [stores, setStores] = useState<StoreData[]>([])
+  const [loading, setLoading] = useState(true)
+  const [showAddModal, setShowAddModal] = useState(false)
+  const [selectedStore, setSelectedStore] = useState<StoreData | null>(null)
 
-  // Redirect to home if not authenticated
   useEffect(() => {
     if (!isLoading && !isAuthenticated) {
-      router.push("/");
+      router.push('/auth')
     }
-  }, [isLoading, isAuthenticated, router]);
+  }, [isLoading, isAuthenticated, router])
+
+  useEffect(() => {
+    if (isAuthenticated) {
+      loadStores()
+    }
+  }, [isAuthenticated])
+
+  async function loadStores() {
+    try {
+      const data = await api.stores.list()
+      setStores(data)
+    } catch (error) {
+      console.error('Failed to load stores:', error)
+    } finally {
+      setLoading(false)
+    }
+  }
 
   const handleSignOut = async () => {
-    await signOut();
-    router.push("/");
-  };
+    await signOut()
+    router.push('/')
+  }
 
-  // Show loading state
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case 'active':
+        return 'bg-green-500/20 text-green-400 border-green-500/30'
+      case 'pending':
+        return 'bg-amber-500/20 text-amber-400 border-amber-500/30'
+      case 'error':
+        return 'bg-red-500/20 text-red-400 border-red-500/30'
+      default:
+        return 'bg-slate-500/20 text-slate-400 border-slate-500/30'
+    }
+  }
+
   if (isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-[#0a0a0f] via-[#111118] to-[#0a0a0f]">
@@ -44,12 +76,11 @@ export default function DashboardPage() {
           <span>Loading...</span>
         </div>
       </div>
-    );
+    )
   }
 
-  // Don't render if not authenticated
   if (!isAuthenticated) {
-    return null;
+    return null
   }
 
   return (
@@ -89,288 +120,210 @@ export default function DashboardPage() {
 
       {/* Main Content */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Welcome Section */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="mb-8"
-        >
-          <h1 className="text-3xl font-bold mb-2">
-            Welcome back, <span className="gradient-text">{user?.email?.split("@")[0] || "User"}</span>
-          </h1>
-          <p className="text-white/50">
-            Manage your AI-powered Shopify stores from one dashboard.
-          </p>
-        </motion.div>
-
-        {/* Stats Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-          <StatCard
-            icon={<Store size={20} />}
-            label="Active Stores"
-            value="0"
-            color="violet"
-          />
-          <StatCard
-            icon={<Package size={20} />}
-            label="Total Products"
-            value="0"
-            color="pink"
-          />
-          <StatCard
-            icon={<BarChart3 size={20} />}
-            label="Today's Revenue"
-            value="$0.00"
-            color="emerald"
-          />
-          <StatCard
-            icon={<Settings size={20} />}
-            label="AI Tasks Running"
-            value="0"
-            color="amber"
-          />
+        {/* Header */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
+          <div>
+            <h1 className="text-2xl md:text-3xl font-bold text-white">
+              Welcome back, <span className="text-transparent bg-clip-text bg-gradient-to-r from-violet-400 to-pink-400">{user?.email?.split('@')[0] || 'User'}</span>
+            </h1>
+            <p className="text-slate-400 mt-1">Manage your AI-powered Shopify stores and integrations.</p>
+          </div>
+          <Button 
+            className="bg-gradient-to-r from-violet-600 to-pink-600"
+            onClick={() => setShowAddModal(true)}
+          >
+            <Plus className="w-4 h-4 mr-2" />
+            Connect Store
+          </Button>
         </div>
 
-        {/* Main Grid */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* Stores Section */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.1 }}
-            className="lg:col-span-2"
-          >
-            <div className="glass rounded-2xl p-6 border border-white/10">
-              <div className="flex items-center justify-between mb-6">
-                <h2 className="text-xl font-semibold flex items-center gap-2">
-                  <Store size={20} className="text-violet-400" />
-                  Your Stores
-                </h2>
-                <Link
-                  href="/stores/new"
-                  className="flex items-center gap-2 px-4 py-2 rounded-lg bg-gradient-to-r from-violet-600 to-pink-600 text-sm font-medium hover:opacity-90 transition-opacity"
-                >
-                  <Plus size={16} />
-                  Add Store
-                </Link>
-              </div>
+        {loading ? (
+          <Card className="bg-[#111118] border-white/10">
+            <CardContent className="py-12 text-center">
+              <div className="animate-pulse text-slate-400">Loading stores...</div>
+            </CardContent>
+          </Card>
+        ) : stores.length === 0 ? (
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            {/* Demo Store Card - Happy Puppy Supply */}
+            <div className="lg:col-span-2 space-y-6">
+              <Card className="bg-[#111118] border-white/10">
+                <CardContent className="p-6">
+                  <div className="flex items-center justify-between mb-6">
+                    <div className="flex items-center gap-4">
+                      <div className="w-14 h-14 bg-gradient-to-br from-violet-500/20 to-pink-500/20 rounded-xl flex items-center justify-center border border-violet-500/20">
+                        <Store className="w-7 h-7 text-violet-400" />
+                      </div>
+                      <div>
+                        <h3 className="font-semibold text-lg text-white">Happy Puppy Supply Store</h3>
+                        <p className="text-sm text-slate-400">yourname.myshopify.com</p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <span className="px-3 py-1 rounded-full text-xs font-medium bg-green-500/20 text-green-400 border border-green-500/30">
+                        Active
+                      </span>
+                      <button className="p-2 text-slate-400 hover:text-violet-400 transition-colors">
+                        <Settings className="w-5 h-5" />
+                      </button>
+                    </div>
+                  </div>
 
-              {/* Empty State */}
-              <div className="text-center py-12 border border-dashed border-white/10 rounded-xl">
-                <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-violet-500/10 flex items-center justify-center">
-                  <Store size={32} className="text-violet-400" />
-                </div>
-                <h3 className="text-lg font-medium mb-2">No stores yet</h3>
-                <p className="text-white/50 text-sm mb-4 max-w-md mx-auto">
-                  Connect your first Shopify store to start using AI automation.
-                </p>
-                <Link
-                  href="/stores/new"
-                  className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-gradient-to-r from-violet-600 to-pink-600 font-medium hover:opacity-90 transition-opacity"
-                >
-                  <Plus size={18} />
-                  Create Your First Store
-                </Link>
-              </div>
-            </div>
-          </motion.div>
+                  {/* Store Stats */}
+                  <div className="grid grid-cols-3 gap-4 mb-6">
+                    <div className="bg-white/5 rounded-lg p-4">
+                      <p className="text-xs text-slate-400 mb-1">Products</p>
+                      <p className="text-xl font-bold text-white">156</p>
+                    </div>
+                    <div className="bg-white/5 rounded-lg p-4">
+                      <p className="text-xs text-slate-400 mb-1">Today's Sales</p>
+                      <p className="text-xl font-bold text-emerald-400">$1,247</p>
+                    </div>
+                    <div className="bg-white/5 rounded-lg p-4">
+                      <p className="text-xs text-slate-400 mb-1">AI Tasks</p>
+                      <p className="text-xl font-bold text-violet-400">4</p>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
 
-          {/* Sidebar */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.2 }}
-            className="space-y-6"
-          >
-            {/* Plan Info */}
-            <div className="glass rounded-2xl p-6 border border-white/10">
-              <h3 className="font-semibold mb-4">Your Plan</h3>
-              <div className="flex items-center gap-3 mb-4">
-                <div className="px-3 py-1 rounded-full bg-amber-500/20 text-amber-400 text-sm font-medium">
-                  Pay As You Go
-                </div>
-              </div>
-              <ul className="space-y-2 text-sm text-white/60 mb-4">
-                <li className="flex items-center gap-2">
-                  <span className="w-1.5 h-1.5 rounded-full bg-violet-400" />
-                  1 store limit
-                </li>
-                <li className="flex items-center gap-2">
-                  <span className="w-1.5 h-1.5 rounded-full bg-violet-400" />
-                  200 products
-                </li>
-                <li className="flex items-center gap-2">
-                  <span className="w-1.5 h-1.5 rounded-full bg-violet-400" />
-                  24/7 AI worker
-                </li>
-              </ul>
-              <Link
-                href="/pricing"
-                className="w-full py-2 rounded-lg border border-white/10 text-center text-sm text-white/70 hover:bg-white/5 transition-colors block"
-              >
-                Upgrade Plan
-              </Link>
+              {/* AI Agent Section */}
+              <Card className="bg-[#111118] border-white/10">
+                <CardContent className="p-6">
+                  <div className="flex items-center gap-3 mb-6">
+                    <div className="w-10 h-10 bg-violet-500/20 rounded-lg flex items-center justify-center">
+                      <Brain className="w-5 h-5 text-violet-400" />
+                    </div>
+                    <div>
+                      <h3 className="font-semibold text-white">Automation Agent</h3>
+                      <p className="text-xs text-slate-400 flex items-center gap-2">
+                        <span className="w-1.5 h-1.5 bg-green-500 rounded-full animate-pulse" />
+                        Running 4 tasks
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* AI Tasks */}
+                  <div className="space-y-3">
+                    {[
+                      { icon: Target, name: 'Product Research', status: 'running', desc: 'Scanning CJ dropshipping for trending pet supplies' },
+                      { icon: RefreshCw, name: 'Catalog Sync', status: 'running', desc: 'Syncing 156 products with inventory updates' },
+                      { icon: TrendingUp, name: 'Price Optimization', status: 'running', desc: 'Adjusting prices based on competitor analysis' },
+                      { icon: MessageCircle, name: 'Meta Ads Sync', status: 'pending', desc: 'Updating Facebook/Instagram campaign budgets' },
+                    ].map((task, idx) => (
+                      <div key={task.name} className="flex items-start gap-4 p-4 bg-white/5 rounded-xl border border-white/5 hover:border-white/10 transition-colors">
+                        <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${
+                          task.status === 'running' ? 'bg-violet-500/20' : 'bg-amber-500/20'
+                        }`}>
+                          <task.icon className={`w-5 h-5 ${
+                            task.status === 'running' ? 'text-violet-400' : 'text-amber-400'
+                          }`} />
+                        </div>
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2">
+                            <span className="font-medium text-white">{task.name}</span>
+                            {task.status === 'running' ? (
+                              <span className="text-[10px] px-2 py-0.5 bg-violet-500/20 text-violet-300 rounded-full">Running</span>
+                            ) : (
+                              <span className="text-[10px] px-2 py-0.5 bg-amber-500/20 text-amber-300 rounded-full">Pending</span>
+                            )}
+                          </div>
+                          <p className="text-sm text-slate-400">{task.desc}</p>
+                        </div>
+                        <button className="p-2 text-slate-500 hover:text-white transition-colors">
+                          {task.status === 'running' ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4" />}
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* Integration Status */}
+                  <div className="mt-6 pt-6 border-t border-white/10">
+                    <div className="flex items-center gap-2 text-sm text-slate-400 mb-3">
+                      <CheckCircle className="w-4 h-4 text-green-400" />
+                      Connected: Shopify, CJ Dropshipping, OpenRouter
+                      <span className="text-slate-600">• GitHub, Vercel pending setup</span>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
             </div>
 
-            {/* Quick Actions */}
-            <div className="glass rounded-2xl p-6 border border-white/10">
-              <h3 className="font-semibold mb-4">Quick Actions</h3>
-              <div className="space-y-2">
-                <QuickAction 
-                  icon={<Store size={18} />} 
-                  label="Connect Shopify Store" 
-                  onClick={() => setShowAddStore(true)}
-                />
-                <QuickAction icon={<Settings size={18} />} label="API Settings" />
-                <QuickAction icon={<BarChart3 size={18} />} label="View Analytics" />
-              </div>
+            {/* Side Panel */}
+            <div className="space-y-6">
+              <Card className="bg-[#111118] border-white/10">
+                <CardContent className="p-6">
+                  <h3 className="font-semibold text-white mb-4">Add a Real Store</h3>
+                  <p className="text-sm text-slate-400 mb-4">
+                    This demo shows what your dashboard will look like. Connect your actual Shopify store to activate AI automation.
+                  </p>
+                  <Button 
+                    className="w-full bg-gradient-to-r from-violet-600 to-pink-600"
+                    onClick={() => setShowAddModal(true)}
+                  >
+                    <Plus className="w-4 h-4 mr-2" />
+                    Connect Store
+                  </Button>
+                </CardContent>
+              </Card>
             </div>
-
-            {/* Recent Activity */}
-            <div className="glass rounded-2xl p-6 border border-white/10">
-              <h3 className="font-semibold mb-4">Recent Activity</h3>
-              <div className="text-center py-4 text-white/40 text-sm">
-                No recent activity
-              </div>
-            </div>
-          </motion.div>
-        </div>
+          </div>
+        ) : (
+          <div className="space-y-4">
+            {stores.map((store) => (
+              <Card key={store.id} className="bg-[#111118] border-white/10">
+                <CardContent className="p-6">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-4">
+                      <div className="w-12 h-12 bg-violet-500/20 rounded-lg flex items-center justify-center">
+                        <Store className="w-6 h-6 text-violet-400" />
+                      </div>
+                      <div>
+                        <h3 className="font-semibold text-white">{store.name}</h3>
+                        <a
+                          href={store.url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-sm text-slate-400 hover:text-violet-400 flex items-center gap-1"
+                        >
+                          {store.url}
+                          <ExternalLink className="w-3 h-3" />
+                        </a>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-4">
+                      <span className={`px-3 py-1 rounded-full text-xs font-medium border ${getStatusColor(store.status)}`}>
+                        {store.status}
+                      </span>
+                      <button
+                        onClick={() => setSelectedStore(store)}
+                        className="p-2 text-slate-400 hover:text-violet-400 transition-colors"
+                      >
+                        <Settings className="w-5 h-5" />
+                      </button>
+                    </div>
+                  </div>
+                  
+                  {store.worker_id && (
+                    <div className="mt-4 ml-16 flex items-center gap-2 text-sm text-green-400">
+                      <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
+                      AI Worker active
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        )}
       </main>
 
-      <AddStoreModal isOpen={showAddStore} onClose={() => setShowAddStore(false)} />
+      {showAddModal && (
+        <AddStoreModal onClose={() => setShowAddModal(false)} onStoreAdded={loadStores} />
+      )}
+
+      {selectedStore && (
+        <StoreDetailsModal store={selectedStore} onClose={() => setSelectedStore(null)} />
+      )}
     </div>
-  );
-}
-
-// Stat Card Component
-function StatCard({ 
-  icon, 
-  label, 
-  value, 
-  color 
-}: { 
-  icon: React.ReactNode; 
-  label: string; 
-  value: string; 
-  color: "violet" | "pink" | "emerald" | "amber";
-}) {
-  const colorClasses = {
-    violet: "bg-violet-500/10 text-violet-400 border-violet-500/20",
-    pink: "bg-pink-500/10 text-pink-400 border-pink-500/20",
-    emerald: "bg-emerald-500/10 text-emerald-400 border-emerald-500/20",
-    amber: "bg-amber-500/10 text-amber-400 border-amber-500/20",
-  };
-
-  return (
-    <motion.div
-      initial={{ opacity: 0, scale: 0.95 }}
-      animate={{ opacity: 1, scale: 1 }}
-      className={`glass rounded-xl p-5 border ${colorClasses[color]}`}
-    >
-      <div className="flex items-center gap-3 mb-2">
-        {icon}
-        <span className="text-sm font-medium opacity-80">{label}</span>
-      </div>
-      <div className="text-2xl font-bold">{value}</div>
-    </motion.div>
-  );
-}
-
-// Store Modal Component
-function AddStoreModal({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) {
-  const [storeName, setStoreName] = useState("");
-  const [storeUrl, setStoreUrl] = useState("");
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [error, setError] = useState("");
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setIsSubmitting(true);
-    setError("");
-    
-    // Simulate store creation - in production this would call the backend API
-    await new Promise(resolve => setTimeout(resolve, 1500));
-    
-    setIsSubmitting(false);
-    onClose();
-    alert(`Store "${storeName}" added successfully! In production, this would provision a worker and start automation.`);
-  };
-
-  if (!isOpen) return null;
-
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-      <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
-      <motion.div
-        initial={{ opacity: 0, scale: 0.95 }}
-        animate={{ opacity: 1, scale: 1 }}
-        className="relative w-full max-w-md overflow-hidden rounded-2xl border border-white/10 bg-[#111118] shadow-2xl p-6"
-      >
-        <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-violet-500 via-pink-500 to-blue-500" />
-        
-        <div className="flex items-center justify-between mb-6">
-          <h2 className="text-xl font-bold gradient-text">Connect Shopify Store</h2>
-          <button onClick={onClose} className="text-white/50 hover:text-white">
-            <X size={20} />
-          </button>
-        </div>
-
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div>
-            <label className="block text-sm text-white/70 mb-1">Store Name</label>
-            <input
-              type="text"
-              value={storeName}
-              onChange={(e) => setStoreName(e.target.value)}
-              placeholder="My Shopify Store"
-              required
-              className="w-full rounded-xl border border-white/10 bg-white/5 py-3 px-4 text-sm text-white placeholder-white/30 outline-none focus:border-violet-500/50"
-            />
-          </div>
-          
-          <div>
-            <label className="block text-sm text-white/70 mb-1">Shopify Store URL</label>
-            <input
-              type="url"
-              value={storeUrl}
-              onChange={(e) => setStoreUrl(e.target.value)}
-              placeholder="https://my-store.myshopify.com"
-              required
-              className="w-full rounded-xl border border-white/10 bg-white/5 py-3 px-4 text-sm text-white placeholder-white/30 outline-none focus:border-violet-500/50"
-            />
-          </div>
-
-          {error && <p className="text-red-400 text-sm">{error}</p>}
-
-          <button
-            type="submit"
-            disabled={isSubmitting}
-            className="w-full py-3 rounded-xl bg-gradient-to-r from-violet-600 to-pink-600 text-white font-semibold hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50 transition-all"
-          >
-            {isSubmitting ? (
-              <span className="flex items-center justify-center gap-2">
-                <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                Connecting...
-              </span>
-            ) : (
-              "Connect Store"
-            )}
-          </button>
-        </form>
-      </motion.div>
-    </div>
-  );
-}
-
-// Quick Action Component
-function QuickAction({ icon, label, onClick }: { icon: React.ReactNode; label: string; onClick?: () => void }) {
-  return (
-    <button 
-      onClick={onClick}
-      className="w-full flex items-center gap-3 p-3 rounded-lg text-sm text-white/70 hover:bg-white/5 transition-colors"
-    >
-      <span className="text-violet-400">{icon}</span>
-      {label}
-    </button>
-  );
+  )
 }
