@@ -75,115 +75,218 @@ export default function BuildProgressPage() {
     return `${hrs.toString().padStart(2, '0')}:${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`
   }
 
-  // Load worker status with detailed progress
+  // Simulated progress for visual feedback during provisioning
+  const simulateProgress = useCallback(() => {
+    setBuildState(prev => {
+      if (prev.status !== 'provisioning' && prev.status !== 'configuring') return prev
+      
+      const elapsed = prev.elapsedTime
+      const newSteps = [...prev.steps]
+      let currentStepIndex = 0
+      let overallProgress = 0
+      
+      // Simulate step progression based on elapsed time
+      // Total estimated time: ~3-4 minutes (180-240 seconds)
+      if (elapsed < 30) {
+        // Step 1: Initialize VPS (0-30s)
+        currentStepIndex = 0
+        newSteps[0].status = 'in_progress'
+        newSteps[0].progress = Math.min(100, (elapsed / 30) * 100)
+        overallProgress = Math.round((elapsed / 30) * 15)
+      } else if (elapsed < 90) {
+        // Step 2: Install Dependencies (30-90s)
+        currentStepIndex = 1
+        newSteps[0].status = 'completed'
+        newSteps[0].progress = 100
+        newSteps[1].status = 'in_progress'
+        newSteps[1].progress = Math.min(100, ((elapsed - 30) / 60) * 100)
+        overallProgress = 15 + Math.round(((elapsed - 30) / 60) * 15)
+      } else if (elapsed < 110) {
+        // Step 3: Configure SSH (90-110s)
+        currentStepIndex = 2
+        newSteps[0].status = 'completed'
+        newSteps[0].progress = 100
+        newSteps[1].status = 'completed'
+        newSteps[1].progress = 100
+        newSteps[2].status = 'in_progress'
+        newSteps[2].progress = Math.min(100, ((elapsed - 90) / 20) * 100)
+        overallProgress = 30 + Math.round(((elapsed - 90) / 20) * 5)
+      } else if (elapsed < 140) {
+        // Step 4: Install OpenClaw (110-140s)
+        currentStepIndex = 3
+        newSteps[0].status = 'completed'
+        newSteps[0].progress = 100
+        newSteps[1].status = 'completed'
+        newSteps[1].progress = 100
+        newSteps[2].status = 'completed'
+        newSteps[2].progress = 100
+        newSteps[3].status = 'in_progress'
+        newSteps[3].progress = Math.min(100, ((elapsed - 110) / 30) * 100)
+        overallProgress = 35 + Math.round(((elapsed - 110) / 30) * 15)
+      } else if (elapsed < 170) {
+        // Step 5: Configure Environment (140-170s)
+        currentStepIndex = 4
+        for (let i = 0; i <= 3; i++) {
+          newSteps[i].status = 'completed'
+          newSteps[i].progress = 100
+        }
+        newSteps[4].status = 'in_progress'
+        newSteps[4].progress = Math.min(100, ((elapsed - 140) / 30) * 100)
+        overallProgress = 50 + Math.round(((elapsed - 140) / 30) * 15)
+      } else if (elapsed < 200) {
+        // Step 6: Start Services (170-200s)
+        currentStepIndex = 5
+        for (let i = 0; i <= 4; i++) {
+          newSteps[i].status = 'completed'
+          newSteps[i].progress = 100
+        }
+        newSteps[5].status = 'in_progress'
+        newSteps[5].progress = Math.min(100, ((elapsed - 170) / 30) * 100)
+        overallProgress = 65 + Math.round(((elapsed - 170) / 30) * 15)
+      } else if (elapsed < 230) {
+        // Step 7: Health Check (200-230s)
+        currentStepIndex = 6
+        for (let i = 0; i <= 5; i++) {
+          newSteps[i].status = 'completed'
+          newSteps[i].progress = 100
+        }
+        newSteps[6].status = 'in_progress'
+        newSteps[6].progress = Math.min(100, ((elapsed - 200) / 30) * 100)
+        overallProgress = 80 + Math.round(((elapsed - 200) / 30) * 15)
+      } else {
+        // Step 8: Ready (230s+)
+        currentStepIndex = 7
+        for (let i = 0; i <= 6; i++) {
+          newSteps[i].status = 'completed'
+          newSteps[i].progress = 100
+        }
+        newSteps[7].status = 'in_progress'
+        newSteps[7].progress = Math.min(100, ((elapsed - 230) / 20) * 100)
+        overallProgress = 95 + Math.round(((elapsed - 230) / 20) * 5)
+      }
+      
+      // Generate logs based on current step
+      const newLogs = [...prev.logs]
+      const stepMessages = [
+        'Creating server instance on Hetzner...',
+        'Installing Node.js, Docker, and system packages...',
+        'Setting up secure access keys...',
+        'Downloading and installing OpenClaw agent...',
+        'Setting up API keys and store credentials...',
+        'Starting OpenClaw and WebSocket connection...',
+        'Verifying worker is operational...',
+        'VPS worker is ready for tasks'
+      ]
+      
+      // Add log entry when step changes
+      const lastLog = newLogs[newLogs.length - 1]
+      const expectedLog = stepMessages[currentStepIndex]
+      if (!lastLog?.includes(expectedLog)) {
+        newLogs.push(`${new Date().toLocaleTimeString()}: ${expectedLog}`)
+      }
+      
+      return {
+        ...prev,
+        steps: newSteps,
+        currentStep: currentStepIndex,
+        overallProgress: Math.min(99, overallProgress), // Cap at 99% until confirmed running
+        logs: newLogs
+      }
+    })
+  }, [])
+
+  // Load worker status with detailed logs
   const loadStatus = useCallback(async () => {
     try {
-      // Get workers list directly instead of from store
+      // Get workers list
       const workers = await api.workers.list()
       const worker = workers[0] // Get first worker
       
       // If no worker yet, just return (might be creating)
       if (!worker) {
-        console.log('No worker found yet, waiting...')
-        // If we're not already provisioning, make sure status is idle
         if (buildState.status !== 'provisioning' && buildState.status !== 'configuring') {
           setBuildState(prev => ({ ...prev, status: 'idle' }))
         }
         return
       }
 
-      // Only update workerId if it changed
+      // Update workerId if it changed
       if (worker.id !== workerId) {
         setWorkerId(worker.id)
-        setBuildState(prev => ({
-          ...prev,
-          logs: [...prev.logs, `${new Date().toLocaleTimeString()}: Worker found: ${worker.id.slice(0, 8)}...`]
-        }))
       }
 
-      // Update build state based on worker status
+      // Fetch detailed provision status from new endpoint
+      let provisionStatus: any = null
+      if (worker.status === 'provisioning' || worker.status === 'configuring') {
+        try {
+          const res = await fetch(`https://shoppdropp-api.onrender.com/api/vps-debug/provision-status/${worker.id}`)
+          provisionStatus = await res.json()
+        } catch (e) {
+          console.log('Could not fetch provision status:', e)
+        }
+      }
+
+      // Update based on worker status
       if (worker.status === 'error') {
-        setBuildState(prev => ({ ...prev, status: 'error' }))
+        setBuildState(prev => ({ 
+          ...prev, 
+          status: 'error',
+          logs: provisionStatus?.logs ? [...prev.logs, ...provisionStatus.logs] : prev.logs
+        }))
         return
       }
       
-      // Use detailed progress from worker if available
-      const currentStep = worker.provisioning_step || 0
-      const stepName = worker.provisioning_step_name || 'Initialize VPS'
-      const progress = worker.provisioning_progress || 0
-      
-      // Map to build steps
-      const newSteps = [...BUILD_STEPS]
-      let overallProgress = 0
-      
       if (worker.status === 'running') {
-        // All steps complete
-        newSteps.forEach((step, i) => {
+        const newSteps = [...BUILD_STEPS]
+        newSteps.forEach((step) => {
           step.status = 'completed'
           step.progress = 100
         })
-        overallProgress = 100
-      } else if (worker.status === 'provisioning' || worker.status === 'configuring') {
-        // Update steps based on current progress
-        newSteps.forEach((step, i) => {
-          if (i < currentStep - 1) {
-            step.status = 'completed'
-            step.progress = 100
-          } else if (i === currentStep - 1) {
-            step.status = 'in_progress'
-            step.progress = progress
-          } else {
-            step.status = 'pending'
-            step.progress = 0
-          }
-        })
+        setBuildState(prev => ({
+          ...prev,
+          status: 'running',
+          steps: newSteps,
+          currentStep: 7,
+          overallProgress: 100,
+          logs: provisionStatus?.logs 
+            ? [...prev.logs, ...provisionStatus.logs, `${new Date().toLocaleTimeString()}: VPS worker is ready!`]
+            : [...prev.logs, `${new Date().toLocaleTimeString()}: VPS worker is ready!`]
+        }))
         
-        // Calculate overall progress
-        overallProgress = Math.round(((currentStep - 1) * 100 + progress) / 8)
-      }
-      
-      // Add log entry if we have one
-      const newLogs = [...buildState.logs]
-      if (worker.provisioning_logs) {
-        try {
-          const logs = JSON.parse(worker.provisioning_logs)
-          if (Array.isArray(logs) && logs.length > 0) {
-            const lastLog = logs[logs.length - 1]
-            const logText = typeof lastLog === 'string' 
-              ? lastLog 
-              : `[${lastLog.timestamp}] Step ${lastLog.step}: ${lastLog.message}`
-            if (!newLogs.includes(logText)) {
-              newLogs.push(logText)
-            }
-          }
-        } catch (e) {
-          // Ignore parse errors
+        // Update server info
+        if (worker.ip_address) {
+          setServerInfo({
+            ip: worker.ip_address,
+            type: worker.hetzner_server_type || 'cpx12',
+            cores: 1,
+            memory: 2,
+            disk: 40
+          })
         }
+        return
       }
       
-      // Update server info if available
-      if (worker.server_ip || worker.hetzner_server_id) {
-        setServerInfo({
-          ip: worker.server_ip,
-          type: worker.hetzner_server_type || 'cpx12',
-          cores: 1,
-          memory: 2,
-          disk: 40
-        })
+      // For provisioning/configuring, use logs from API if available
+      if (worker.status === 'provisioning' || worker.status === 'configuring') {
+        setBuildState(prev => ({
+          ...prev, 
+          status: worker.status,
+          logs: provisionStatus?.logs 
+            ? [...provisionStatus.logs.slice(-10)] // Keep last 10 logs
+            : prev.logs,
+          serverInfo: worker.ip_address ? {
+            ip: worker.ip_address,
+            type: worker.hetzner_server_type || 'cpx12',
+            cores: 1,
+            memory: 2,
+            disk: 40
+          } : prev.serverInfo
+        }))
       }
-
-      setBuildState(prev => ({
-        ...prev,
-        status: worker.status,
-        steps: newSteps,
-        currentStep: currentStep > 0 ? currentStep - 1 : 0,
-        overallProgress,
-        logs: newLogs.length > prev.logs.length ? newLogs : prev.logs
-      }))
     } catch (error) {
       console.error('Failed to load status:', error)
     }
-  }, [workerId, buildState.logs])
+  }, [workerId, buildState.status])
 
   // Start provisioning
   const startProvisioning = async () => {
@@ -194,19 +297,25 @@ export default function BuildProgressPage() {
         logs: [...prev.logs, `${new Date().toLocaleTimeString()}: Starting VPS provisioning...`]
       }))
 
-      // Call direct API to create worker and provision VPS
-      const response = await api.vps.createAndProvision()
+      // Call API to start async provision
+      const response = await fetch('https://shoppdropp-api.onrender.com/api/vps-debug/debug-provision', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' }
+      })
+      const data = await response.json()
       
-      if (response.workerId) {
-        setWorkerId(response.workerId)
+      if (data.workerId) {
+        setWorkerId(data.workerId)
         setBuildState(prev => ({
           ...prev,
           logs: [
             ...prev.logs, 
-            `${new Date().toLocaleTimeString()}: Worker created: ${response.workerId.slice(0, 8)}...`,
-            `${new Date().toLocaleTimeString()}: ${response.message}`
+            `${new Date().toLocaleTimeString()}: Worker created: ${data.workerId.slice(0, 8)}...`,
+            `${new Date().toLocaleTimeString()}: ${data.message}`
           ]
         }))
+      } else {
+        throw new Error(data.error || 'Failed to start provisioning')
       }
     } catch (error: any) {
       setBuildState(prev => ({
@@ -217,7 +326,7 @@ export default function BuildProgressPage() {
     }
   }
 
-  // Timer effect
+  // Timer effect - updates elapsed time and simulates progress
   useEffect(() => {
     if (buildState.status === 'idle' || buildState.status === 'running' || buildState.status === 'error') {
       return
@@ -229,10 +338,12 @@ export default function BuildProgressPage() {
         elapsedTime: prev.elapsedTime + 1,
         estimatedRemaining: Math.max(0, prev.estimatedRemaining - 1)
       }))
+      // Simulate visual progress
+      simulateProgress()
     }, 1000)
 
     return () => clearInterval(timer)
-  }, [buildState.status])
+  }, [buildState.status, simulateProgress])
 
   // Poll for status updates
   useEffect(() => {
