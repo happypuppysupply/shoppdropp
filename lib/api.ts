@@ -95,9 +95,11 @@ export const api = {
 
   // VPS Management
   vps: {
+    createAndProvision: (storeId?: string) =>
+      api.request('/vps-simple/create-and-provision', { method: 'POST', body: JSON.stringify({ storeId }) }),
     provision: (workerId: string, envVars?: Record<string, string>) =>
       api.request(`/vps/provision/${workerId}`, { method: 'POST', body: JSON.stringify({ envVars }) }),
-    getStatus: (workerId: string) => api.request(`/vps/status/${workerId}`),
+    getStatus: (workerId: string) => api.request(`/vps-simple/status/${workerId}`),
     getMetrics: (workerId: string) => api.request(`/vps/metrics/${workerId}`),
     reboot: (workerId: string) => api.request(`/vps/reboot/${workerId}`, { method: 'POST' }),
     destroy: (workerId: string) => api.request(`/vps/${workerId}`, { method: 'DELETE' }),

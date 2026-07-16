@@ -94,12 +94,13 @@ export default function DashboardPage() {
 
   // Auto-poll VPS status when provisioning
   useEffect(() => {
-    if (!store.worker_id) return
+    const currentStore = stores[0] || demoStore
+    if (!currentStore?.worker_id) return
     if (vpsStatus.status === 'provisioning' || vpsStatus.status === 'configuring') {
       const interval = setInterval(loadVpsStatus, 5000) // Poll every 5 seconds
       return () => clearInterval(interval)
     }
-  }, [vpsStatus.status, store.worker_id])
+  }, [vpsStatus.status, stores])
 
   useEffect(() => {
     if (isAuthenticated) {
@@ -834,10 +835,30 @@ interface VPSCardProps {
 }
 
 function VPSCard({ workerId, status, onProvision, onReboot, onRefresh }: VPSCardProps) {
+  const router = useRouter()
+  
   if (!workerId) {
     return (
-      <div className="p-6 rounded-xl bg-[#111118] border border-white/10 text-center">
-        <p className="text-slate-400 mb-4">No worker assigned to this store</p>
+      <div className="p-6 rounded-xl bg-[#111118] border border-white/10">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-lg bg-[#D50c2d]/20 flex items-center justify-center">
+              <span className="text-[#D50c2d] font-bold text-lg">H</span>
+            </div>
+            <div>
+              <h3 className="font-semibold text-white">Hetzner VPS</h3>
+              <p className="text-xs text-slate-400">No worker assigned</p>
+            </div>
+          </div>
+          <Button 
+            size="sm" 
+            className="bg-gradient-to-r from-violet-600 to-pink-600"
+            onClick={() => router.push('/dashboard/build-progress')}
+          >
+            <Play className="w-4 h-4 mr-2" />
+            Setup Worker
+          </Button>
+        </div>
       </div>
     )
   }
