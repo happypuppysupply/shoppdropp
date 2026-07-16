@@ -124,6 +124,35 @@ export const api = {
       api.request('/stripe/checkout', { method: 'POST', body: JSON.stringify({ plan }) }),
     getSubscription: () => api.request('/stripe/subscription'),
   },
+
+  // OpenWeb Ninja - Product Research APIs
+  openwebninja: {
+    configure: (apiKey: string, storeId?: string) =>
+      api.request('/openwebninja/configure', { 
+        method: 'POST', 
+        body: JSON.stringify({ apiKey, storeId }) 
+      }),
+    getConfig: (storeId?: string) => 
+      api.request(`/openwebninja/config${storeId ? `?storeId=${storeId}` : ''}`),
+    search: (platform: string, query: string, options?: { page?: number; country?: string; sort_by?: string }, storeId?: string) =>
+      api.request(`/openwebninja/search${storeId ? `?storeId=${storeId}` : ''}`, {
+        method: 'POST',
+        body: JSON.stringify({ 
+          platform, 
+          query, 
+          page: options?.page || 1,
+          country: options?.country || 'US',
+          sort_by: options?.sort_by || 'RELEVANCE'
+        })
+      }),
+    getProduct: (platform: string, productId: string, storeId?: string) =>
+      api.request(`/openwebninja/product/${platform}/${productId}${storeId ? `?storeId=${storeId}` : ''}`),
+    getTrending: (category?: string, limit?: number, storeId?: string) =>
+      api.request(`/openwebninja/trending${storeId ? `?storeId=${storeId}` : ''}`, {
+        method: 'POST',
+        body: JSON.stringify({ category, limit: limit || 20 })
+      }),
+  },
 }
 
 export default api

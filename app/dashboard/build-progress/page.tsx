@@ -39,6 +39,13 @@ interface BuildState {
   estimatedRemaining: number // seconds
   steps: BuildStep[]
   logs: string[]
+  serverInfo?: {
+    ip?: string
+    type?: string
+    cores?: number
+    memory?: number
+    disk?: number
+  }
 }
 
 const BUILD_STEPS: BuildStep[] = [

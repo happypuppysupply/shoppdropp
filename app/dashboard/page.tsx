@@ -15,6 +15,7 @@ import { AddStoreModal } from '@/components/dashboard/AddStoreModal'
 import { StoreDetailsModal } from '@/components/dashboard/StoreDetailsModal'
 import { StoreIntegrations } from '@/components/dashboard/StoreIntegrations'
 import { AIProviderModal } from '@/components/dashboard/AIProviderModal'
+import { OpenWebNinjaModal } from '@/components/dashboard/OpenWebNinjaModal'
 
 interface StoreData {
   id: string
@@ -50,6 +51,7 @@ export default function DashboardPage() {
     github: { connected: false },
     vercel: { connected: false },
     rapidapi: { connected: false, apis: [] as string[] },
+    openwebninja: { connected: false },
   })
   
   // VPS state
@@ -77,6 +79,9 @@ export default function DashboardPage() {
 
   // AI Provider modal state
   const [showAIConfig, setShowAIConfig] = useState(false)
+  
+  // OpenWeb Ninja modal state
+  const [showOpenWebNinja, setShowOpenWebNinja] = useState(false)
   
   // Chat state
   const [chatInput, setChatInput] = useState('')
@@ -556,6 +561,7 @@ export default function DashboardPage() {
                 onConfigureAI={() => setShowAIConfig(true)}
                 onConnectGitHub={() => {}}
                 onConnectVercel={() => {}}
+                onConnectOpenWebNinja={() => setShowOpenWebNinja(true)}
               />
             </div>
           )}
@@ -655,13 +661,24 @@ export default function DashboardPage() {
       )}
 
       {showAIConfig && (
-        <AIProviderModal 
-          onClose={() => setShowAIConfig(false)} 
+        <AIProviderModal
+          onClose={() => setShowAIConfig(false)}
           onConfigured={() => {
             setShowAIConfig(false)
             // Refresh integrations to show AI as connected
             setIntegrations(prev => ({ ...prev, ai: { connected: true } }))
-          }} 
+          }}
+        />
+      )}
+
+      {showOpenWebNinja && (
+        <OpenWebNinjaModal
+          onClose={() => setShowOpenWebNinja(false)}
+          onConfigured={() => {
+            setShowOpenWebNinja(false)
+            // Refresh integrations to show OpenWebNinja as connected
+            setIntegrations(prev => ({ ...prev, openwebninja: { connected: true } }))
+          }}
         />
       )}
     </div>

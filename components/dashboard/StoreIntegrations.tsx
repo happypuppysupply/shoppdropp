@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import { 
   Store, MessageCircle, ShoppingBag, Brain, Code2, Triangle, 
-  Link2, CheckCircle, AlertCircle, ChevronRight, Zap, Cloud
+  Link2, CheckCircle, AlertCircle, ChevronRight, Zap, Cloud, Search
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 
@@ -17,6 +17,7 @@ interface StoreIntegrationsProps {
   onConfigureAI: () => void
   onConnectGitHub: () => void
   onConnectVercel: () => void
+  onConnectOpenWebNinja?: () => void
   integrations: {
     shopify?: { connected: boolean }
     meta_ads?: { connected: boolean }
@@ -26,6 +27,7 @@ interface StoreIntegrationsProps {
     github?: { connected: boolean }
     vercel?: { connected: boolean }
     rapidapi?: { connected: boolean; apis?: string[] }
+    openwebninja?: { connected: boolean }
   }
 }
 
@@ -112,6 +114,17 @@ const RAPIDAPI_INTEGRATION = {
   required: false,
 }
 
+const OPENWEBNINJA_INTEGRATION = {
+  id: 'openwebninja' as const,
+  name: 'OpenWeb Ninja',
+  description: 'Real-time product research across Amazon, Walmart, eBay',
+  icon: Search,
+  color: 'orange',
+  bgColor: 'bg-orange-500/20',
+  textColor: 'text-orange-400',
+  required: false,
+}
+
 const HANDLERS: Record<string, string> = {
   shopify: 'onConnectShopify',
   meta_ads: 'onConnectMeta',
@@ -123,7 +136,7 @@ const HANDLERS: Record<string, string> = {
   rapidapi: 'onConnectRapidAPI',
 }
 
-export function StoreIntegrations({ 
+export function StoreIntegrations({
   storeId,
   storeName,
   onConnectShopify,
@@ -133,11 +146,12 @@ export function StoreIntegrations({
   onConfigureAI,
   onConnectGitHub,
   onConnectVercel,
-  integrations 
+  onConnectOpenWebNinja,
+  integrations
 }: StoreIntegrationsProps) {
   const isHappyPuppy = storeName.toLowerCase().includes('happy puppy')
   const INTEGRATIONS = getIntegrations(isHappyPuppy)
-  
+
   const handlers: Record<string, () => void> = {
     shopify: onConnectShopify,
     meta_ads: onConnectMeta,
@@ -146,6 +160,7 @@ export function StoreIntegrations({
     ai: onConfigureAI,
     github: onConnectGitHub,
     vercel: onConnectVercel,
+    openwebninja: onConnectOpenWebNinja || (() => {}),
   }
 
   const getStatus = (id: string) => {
@@ -166,7 +181,7 @@ export function StoreIntegrations({
   }
 
   const connectedCount = Object.values(integrations).filter(i => i?.connected).length
-  const totalCount = INTEGRATIONS.length + 1 // +1 for RapidAPI
+  const totalCount = INTEGRATIONS.length + 2 // +2 for RapidAPI and OpenWebNinja
 
   return (
     <div className="space-y-6">
@@ -256,10 +271,10 @@ export function StoreIntegrations({
           const isConnected = getStatus('rapidapi')
           const Icon = RAPIDAPI_INTEGRATION.icon
           return (
-            <div 
+            <div
               className={`p-4 rounded-xl border ${
-                isConnected 
-                  ? 'bg-white/5 border-white/20' 
+                isConnected
+                  ? 'bg-white/5 border-white/20'
                   : 'bg-white/[0.02] border-white/10 hover:border-white/20'
               } transition-all`}
             >
@@ -281,7 +296,7 @@ export function StoreIntegrations({
                   <AlertCircle className="w-5 h-5 text-slate-600" />
                 )}
               </div>
-              
+
               <div className="flex items-center justify-between">
                 <span className={`text-xs ${isConnected ? 'text-green-400' : 'text-slate-500'}`}>
                   {getDetails('rapidapi')}
@@ -289,9 +304,61 @@ export function StoreIntegrations({
                 <Button
                   size="sm"
                   variant={isConnected ? "outline" : "default"}
-                  className={isConnected 
-                    ? 'border-white/20 text-slate-300 hover:bg-white/5' 
+                  className={isConnected
+                    ? 'border-white/20 text-slate-300 hover:bg-white/5'
                     : 'bg-gradient-to-r from-cyan-600 to-blue-600'
+                  }
+                >
+                  {isConnected ? 'Manage' : 'Connect'}
+                  <ChevronRight className="w-3 h-3 ml-1" />
+                </Button>
+              </div>
+            </div>
+          )
+        })()}
+
+        {/* OpenWeb Ninja Card */}
+        {(() => {
+          const isConnected = getStatus('openwebninja')
+          const Icon = OPENWEBNINJA_INTEGRATION.icon
+          return (
+            <div
+              className={`p-4 rounded-xl border ${
+                isConnected
+                  ? 'bg-white/5 border-white/20'
+                  : 'bg-white/[0.02] border-white/10 hover:border-white/20'
+              } transition-all`}
+            >
+              <div className="flex items-start justify-between mb-3">
+                <div className="flex items-center gap-3">
+                  <div className={`p-2 ${OPENWEBNINJA_INTEGRATION.bgColor} rounded-lg`}>
+                    <Icon className={`w-5 h-5 ${OPENWEBNINJA_INTEGRATION.textColor}`} />
+                  </div>
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <h4 className="font-medium text-white">{OPENWEBNINJA_INTEGRATION.name}</h4>
+                    </div>
+                    <p className="text-xs text-slate-400">{OPENWEBNINJA_INTEGRATION.description}</p>
+                  </div>
+                </div>
+                {isConnected ? (
+                  <CheckCircle className="w-5 h-5 text-green-400" />
+                ) : (
+                  <AlertCircle className="w-5 h-5 text-slate-600" />
+                )}
+              </div>
+
+              <div className="flex items-center justify-between">
+                <span className={`text-xs ${isConnected ? 'text-green-400' : 'text-slate-500'}`}>
+                  {isConnected ? 'Connected' : 'Not connected'}
+                </span>
+                <Button
+                  size="sm"
+                  variant={isConnected ? "outline" : "default"}
+                  onClick={handlers.openwebninja}
+                  className={isConnected
+                    ? 'border-white/20 text-slate-300 hover:bg-white/5'
+                    : 'bg-gradient-to-r from-orange-600 to-violet-600'
                   }
                 >
                   {isConnected ? 'Manage' : 'Connect'}
