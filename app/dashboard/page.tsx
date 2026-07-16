@@ -92,6 +92,15 @@ export default function DashboardPage() {
     }
   }, [isLoading, isAuthenticated, router])
 
+  // Auto-poll VPS status when provisioning
+  useEffect(() => {
+    if (!store.worker_id) return
+    if (vpsStatus.status === 'provisioning' || vpsStatus.status === 'configuring') {
+      const interval = setInterval(loadVpsStatus, 5000) // Poll every 5 seconds
+      return () => clearInterval(interval)
+    }
+  }, [vpsStatus.status, store.worker_id])
+
   useEffect(() => {
     if (isAuthenticated) {
       loadStores()

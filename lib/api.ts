@@ -2,13 +2,26 @@
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://shoppdropp-api.onrender.com'
 
 // Import supabase to get session
-import { createBrowserClient } from '@supabase/ssr'
+import { createClient } from '@supabase/supabase-js'
+
+// Singleton Supabase client for browser
+let supabaseClient: any = null
 
 function getSupabaseClient() {
+  if (supabaseClient) return supabaseClient
+  
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL
   const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
   if (!url || !key) return null
-  return createBrowserClient(url, key)
+  
+  supabaseClient = createClient(url, key, {
+    auth: {
+      autoRefreshToken: true,
+      persistSession: true,
+      detectSessionInUrl: true,
+    }
+  })
+  return supabaseClient
 }
 
 export const api = {
@@ -23,6 +36,15 @@ export const api = {
     
     const { data: { session } } = await supabase.auth.getSession()
     return session?.access_token || null
+  },
+
+  // Set token manually (called by AuthProvider on login)
+  setToken(token: string | null) {
+    if (token) {
+      localStorage.setItem('token', token)
+    } else {
+      localStorage.removeItem('token')
+    }
   },
 
   async request(endpoint: string, options: RequestInit = {}) {
