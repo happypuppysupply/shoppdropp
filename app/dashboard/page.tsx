@@ -51,7 +51,7 @@ export default function DashboardPage() {
     github: { connected: false },
     vercel: { connected: false },
     rapidapi: { connected: false, apis: [] as string[] },
-    openwebninja: { connected: false },
+    openwebninja: { connected: false, services: {} as Record<string, boolean> },
   })
   
   // VPS state
@@ -674,10 +674,22 @@ export default function DashboardPage() {
       {showOpenWebNinja && (
         <OpenWebNinjaModal
           onClose={() => setShowOpenWebNinja(false)}
-          onConfigured={() => {
+          onConfigured={async () => {
             setShowOpenWebNinja(false)
             // Refresh integrations to show OpenWebNinja as connected
-            setIntegrations(prev => ({ ...prev, openwebninja: { connected: true } }))
+            try {
+              const config = await api.openwebninja.getConfig()
+              const anyConfigured = Object.values(config.services || {}).some(Boolean)
+              setIntegrations(prev => ({ 
+                ...prev, 
+                openwebninja: { 
+                  connected: anyConfigured,
+                  services: config.services || {}
+                } 
+              }))
+            } catch (e) {
+              setIntegrations(prev => ({ ...prev, openwebninja: { connected: true, services: {} } }))
+            }
           }}
         />
       )}

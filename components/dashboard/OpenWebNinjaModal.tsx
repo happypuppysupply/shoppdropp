@@ -1,55 +1,60 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { X, Search, Loader2, AlertTriangle, Check, ExternalLink, Package, TrendingUp, BarChart3, Store } from 'lucide-react'
+import { X, Search, Loader2, AlertTriangle, Check, ExternalLink, Package, TrendingUp, BarChart3, Store, Globe, ShoppingCart, Layers } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { api } from '@/lib/api'
 
-const PLATFORMS = [
+const SERVICES = [
   {
     id: 'amazon',
-    name: 'Amazon',
-    description: 'Real-time Amazon product data, prices, reviews, and sales volume',
+    name: 'Amazon Data API',
+    description: 'Real-time Amazon product search, prices, reviews, and sales data',
     icon: Store,
     color: 'text-orange-400',
     bgColor: 'bg-orange-500/20',
-    features: ['Product search', 'Price tracking', 'Sales volume', 'Reviews', 'Prime status']
+    docsUrl: 'https://openwebninja.com/dashboard/realtime-amazon-data',
+    placeholder: 'ak_your_amazon_api_key...',
   },
   {
     id: 'walmart',
-    name: 'Walmart',
-    description: 'Walmart product listings, pricing, and availability data',
-    icon: Package,
+    name: 'Walmart Data API',
+    description: 'Walmart product listings, pricing, and availability',
+    icon: ShoppingCart,
     color: 'text-blue-400',
     bgColor: 'bg-blue-500/20',
-    features: ['Product search', 'Price comparison', 'Stock status', 'Store availability']
+    docsUrl: 'https://openwebninja.com/dashboard/real-time-walmart-data',
+    placeholder: 'ak_your_walmart_api_key...',
   },
   {
     id: 'ebay',
-    name: 'eBay',
-    description: 'eBay listings, auction data, and seller information',
-    icon: TrendingUp,
+    name: 'eBay Data API',
+    description: 'eBay listings, auction data, and sold prices',
+    icon: Globe,
     color: 'text-red-400',
     bgColor: 'bg-red-500/20',
-    features: ['Active listings', 'Auction data', 'Seller ratings', 'Sold prices']
+    docsUrl: 'https://openwebninja.com/dashboard/real-time-ebay-data',
+    placeholder: 'ak_your_ebay_api_key...',
   },
   {
-    id: 'product-search',
-    name: 'Product Search',
+    id: 'product_search',
+    name: 'Product Search API',
     description: 'Aggregated product search across multiple platforms',
     icon: Search,
     color: 'text-violet-400',
     bgColor: 'bg-violet-500/20',
-    features: ['Multi-platform', 'Price comparison', 'Reviews aggregation', 'Trending detection']
+    docsUrl: 'https://openwebninja.com/dashboard/realtime-product-search',
+    placeholder: 'ak_your_product_search_api_key...',
   },
   {
     id: 'ecommerce',
-    name: 'E-commerce Data',
+    name: 'E-commerce Data API',
     description: 'Comprehensive e-commerce market data and analytics',
     icon: BarChart3,
     color: 'text-emerald-400',
     bgColor: 'bg-emerald-500/20',
-    features: ['Market trends', 'Competitor analysis', 'Price history', 'Demand forecasting']
+    docsUrl: 'https://openwebninja.com/dashboard/realtime-ecommerce-data',
+    placeholder: 'ak_your_ecommerce_api_key...',
   },
 ]
 
@@ -59,53 +64,55 @@ interface OpenWebNinjaModalProps {
 }
 
 export function OpenWebNinjaModal({ onClose, onConfigured }: OpenWebNinjaModalProps) {
-  const [apiKey, setApiKey] = useState('')
+  const [apiKeys, setApiKeys] = useState<Record<string, string>>({
+    amazon: '',
+    walmart: '',
+    ebay: '',
+    product_search: '',
+    ecommerce: '',
+  })
+  const [configuredServices, setConfiguredServices] = useState<Record<string, boolean>>({})
   const [loading, setLoading] = useState(false)
-  const [testing, setTesting] = useState(false)
+  const [testing, setTesting] = useState<Record<string, boolean>>({})
   const [error, setError] = useState('')
   const [success, setSuccess] = useState(false)
-  const [isConfigured, setIsConfigured] = useState(false)
-  const [activeTab, setActiveTab] = useState<'configure' | 'platforms'>('configure')
+  const [activeTab, setActiveTab] = useState<'configure' | 'overview'>('configure')
+  const [expandedService, setExpandedService] = useState<string | null>(null)
 
   useEffect(() => {
-    checkExistingConfig()
+    loadExistingConfig()
   }, [])
 
-  const checkExistingConfig = async () => {
+  const loadExistingConfig = async () => {
     try {
       const config = await api.openwebninja.getConfig()
-      if (config.configured) {
-        setIsConfigured(true)
+      if (config.configured && config.services) {
+        setConfiguredServices(config.services)
       }
     } catch (e) {
       // Not configured yet
     }
   }
 
-  const testApiKey = async () => {
-    setTesting(true)
+  const handleApiKeyChange = (serviceId: string, value: string) => {
+    setApiKeys(prev => ({ ...prev, [serviceId]: value }))
     setError('')
+  }
+
+  const testService = async (serviceId: string) => {
+    const apiKey = apiKeys[serviceId]
+    if (!apiKey.trim()) return
+
+    setTesting(prev => ({ ...prev, [serviceId]: true }))
     
     try {
-      // Test with a simple search
-      const response = await fetch('https://api.openwebninja.com/realtime-amazon-data/search?query=test&page=1', {
-        headers: {
-          'X-API-Key': apiKey,
-        },
-      })
-      
-      if (response.status === 401 || response.status === 403) {
-        setError('Invalid API key. Please check your key and try again.')
-        setTesting(false)
-        return false
-      }
-      
-      return true
-    } catch (e) {
-      setError('Failed to test API key. Please check your connection.')
-      return false
+      // Test via backend
+      await api.openwebninja.configure(serviceId, apiKey)
+      setConfiguredServices(prev => ({ ...prev, [serviceId]: true }))
+    } catch (e: any) {
+      // Test failed
     } finally {
-      setTesting(false)
+      setTesting(prev => ({ ...prev, [serviceId]: false }))
     }
   }
 
@@ -115,32 +122,49 @@ export function OpenWebNinjaModal({ onClose, onConfigured }: OpenWebNinjaModalPr
     setLoading(true)
 
     try {
-      // First test the key
-      const isValid = await testApiKey()
-      if (!isValid) {
+      // Filter out empty keys
+      const keysToSave: Record<string, string> = {}
+      for (const [service, key] of Object.entries(apiKeys)) {
+        if (key.trim()) {
+          keysToSave[service] = key.trim()
+        }
+      }
+
+      if (Object.keys(keysToSave).length === 0) {
+        setError('Please enter at least one API key')
         setLoading(false)
         return
       }
 
-      // Save configuration
-      await api.openwebninja.configure(apiKey)
+      // Save all keys at once
+      const result = await api.openwebninja.configureAll(keysToSave)
+      
+      // Update configured status based on results
+      const newConfigured: Record<string, boolean> = {}
+      for (const [service, res] of Object.entries(result.results)) {
+        newConfigured[service] = res.success
+      }
+      setConfiguredServices(prev => ({ ...prev, ...newConfigured }))
+      
       setSuccess(true)
-      setIsConfigured(true)
       
       setTimeout(() => {
         onConfigured()
         onClose()
       }, 1500)
     } catch (err: any) {
-      setError(err.message || 'Failed to configure OpenWeb Ninja')
+      setError(err.message || 'Failed to configure OpenWeb Ninja APIs')
     } finally {
       setLoading(false)
     }
   }
 
+  const configuredCount = Object.values(configuredServices).filter(Boolean).length
+  const hasAnyKeys = Object.values(apiKeys).some(k => k.trim().length > 0)
+
   return (
     <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-      <div className="w-full max-w-2xl bg-[#111118] rounded-2xl border border-white/10 shadow-xl overflow-hidden max-h-[90vh] overflow-y-auto">
+      <div className="w-full max-w-3xl bg-[#111118] rounded-2xl border border-white/10 shadow-xl overflow-hidden max-h-[90vh] overflow-y-auto">
         {/* Header */}
         <div className="p-6 border-b border-white/10">
           <div className="flex items-center justify-between">
@@ -149,9 +173,12 @@ export function OpenWebNinjaModal({ onClose, onConfigured }: OpenWebNinjaModalPr
                 <Search className="w-5 h-5 text-orange-400" />
               </div>
               <div>
-                <h2 className="text-xl font-semibold text-white">OpenWeb Ninja</h2>
+                <h2 className="text-xl font-semibold text-white">OpenWeb Ninja APIs</h2>
                 <p className="text-sm text-slate-400">
-                  Real-time product research across Amazon, Walmart, eBay & more
+                  {configuredCount > 0 
+                    ? `${configuredCount} of ${SERVICES.length} APIs connected`
+                    : 'Configure your product research APIs'
+                  }
                 </p>
               </div>
             </div>
@@ -173,17 +200,17 @@ export function OpenWebNinjaModal({ onClose, onConfigured }: OpenWebNinjaModalPr
                   : 'text-slate-400 border-transparent hover:text-white'
               }`}
             >
-              Configuration
+              Configure APIs
             </button>
             <button
-              onClick={() => setActiveTab('platforms')}
+              onClick={() => setActiveTab('overview')}
               className={`pb-2 text-sm font-medium border-b-2 transition-colors ${
-                activeTab === 'platforms'
+                activeTab === 'overview'
                   ? 'text-white border-violet-500'
                   : 'text-slate-400 border-transparent hover:text-white'
               }`}
             >
-              Available Platforms
+              Available Services
             </button>
           </div>
         </div>
@@ -199,68 +226,118 @@ export function OpenWebNinjaModal({ onClose, onConfigured }: OpenWebNinjaModalPr
           {success && (
             <div className="mb-4 p-3 bg-green-500/20 border border-green-500/50 rounded-lg text-green-300 text-sm flex items-center gap-2">
               <Check className="w-4 h-4" />
-              OpenWeb Ninja configured successfully!
+              OpenWeb Ninja APIs configured successfully!
             </div>
           )}
 
           {activeTab === 'configure' && (
-            <form onSubmit={handleSubmit} className="space-y-6">
+            <form onSubmit={handleSubmit} className="space-y-4">
               {/* Info Card */}
               <div className="p-4 bg-gradient-to-r from-orange-500/10 to-violet-500/10 border border-orange-500/20 rounded-xl">
-                <h3 className="font-medium text-white mb-2">What is OpenWeb Ninja?</h3>
-                <p className="text-sm text-slate-300 mb-3">
-                  OpenWeb Ninja provides real-time access to product data from major e-commerce platforms. 
-                  Use it to research winning products, analyze competitors, and find pricing opportunities.
+                <h3 className="font-medium text-white mb-2">Configure Your API Keys</h3>
+                <p className="text-sm text-slate-300">
+                  Enter your OpenWeb Ninja API keys below. Each service requires its own API key. 
+                  You can configure all of them or just the ones you need.
                 </p>
-                <div className="flex flex-wrap gap-2">
-                  {['Amazon', 'Walmart', 'eBay', 'Product Search', 'Market Analytics'].map((tag) => (
-                    <span key={tag} className="px-2 py-1 bg-white/10 rounded text-xs text-slate-300">
-                      {tag}
-                    </span>
-                  ))}
-                </div>
               </div>
 
-              {/* API Key Input */}
-              <div>
-                <label className="block text-sm font-medium text-slate-300 mb-2">
-                  OpenWeb Ninja API Key
-                </label>
-                <input
-                  type="password"
-                  value={apiKey}
-                  onChange={(e) => setApiKey(e.target.value)}
-                  className="w-full px-4 py-3 bg-white/5 border border-white/20 rounded-lg text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-violet-500 font-mono text-sm"
-                  placeholder="ak_..."
-                  required
-                />
-                <div className="mt-2 flex items-start gap-2 text-xs text-slate-500">
-                  <AlertTriangle className="w-3 h-3 mt-0.5 flex-shrink-0" />
-                  <span>
-                    Your API key is encrypted and stored securely. Get your key from{' '}
-                    <a 
-                      href="https://openwebninja.com" 
-                      target="_blank" 
-                      rel="noopener noreferrer"
-                      className="text-violet-400 hover:underline inline-flex items-center gap-1"
+              {/* API Key Inputs */}
+              <div className="space-y-3">
+                {SERVICES.map((service) => {
+                  const isConfigured = configuredServices[service.id]
+                  const isTesting = testing[service.id]
+                  const hasValue = apiKeys[service.id].trim().length > 0
+                  const isExpanded = expandedService === service.id
+
+                  return (
+                    <div
+                      key={service.id}
+                      className={`p-4 rounded-xl border transition-all ${
+                        isConfigured
+                          ? 'bg-green-500/5 border-green-500/30'
+                          : hasValue
+                          ? 'bg-violet-500/5 border-violet-500/30'
+                          : 'bg-white/5 border-white/10 hover:border-white/20'
+                      }`}
                     >
-                      OpenWeb Ninja
-                      <ExternalLink className="w-3 h-3" />
-                    </a>
-                  </span>
-                </div>
+                      <div className="flex items-start gap-3">
+                        <div className={`p-2 ${service.bgColor} rounded-lg flex-shrink-0`}>
+                          <service.icon className={`w-5 h-5 ${service.color}`} />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center justify-between">
+                            <div>
+                              <h4 className="font-medium text-white flex items-center gap-2">
+                                {service.name}
+                                {isConfigured && (
+                                  <span className="text-xs px-2 py-0.5 bg-green-500/20 text-green-400 rounded-full">
+                                    Connected
+                                  </span>
+                                )}
+                              </h4>
+                              <p className="text-xs text-slate-400 mt-0.5">{service.description}</p>
+                            </div>
+                            <a
+                              href={service.docsUrl}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-xs text-violet-400 hover:text-violet-300 flex items-center gap-1 flex-shrink-0"
+                            >
+                              Get Key
+                              <ExternalLink className="w-3 h-3" />
+                            </a>
+                          </div>
+
+                          {/* API Key Input */}
+                          <div className="mt-3 flex gap-2">
+                            <input
+                              type="password"
+                              value={apiKeys[service.id]}
+                              onChange={(e) => handleApiKeyChange(service.id, e.target.value)}
+                              className="flex-1 px-3 py-2 bg-white/5 border border-white/20 rounded-lg text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-violet-500 font-mono text-sm"
+                              placeholder={service.placeholder}
+                            />
+                            {hasValue && !isConfigured && (
+                              <button
+                                type="button"
+                                onClick={() => testService(service.id)}
+                                disabled={isTesting}
+                                className="px-3 py-2 bg-violet-500/20 hover:bg-violet-500/30 text-violet-400 rounded-lg text-sm font-medium transition-colors disabled:opacity-50"
+                              >
+                                {isTesting ? (
+                                  <Loader2 className="w-4 h-4 animate-spin" />
+                                ) : (
+                                  'Test'
+                                )}
+                              </button>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  )
+                })}
               </div>
 
-              {/* Test Status */}
-              {testing && (
-                <div className="flex items-center gap-2 text-sm text-slate-400">
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                  Testing API key...
-                </div>
-              )}
+              {/* Security Note */}
+              <div className="flex items-start gap-2 text-xs text-slate-500 mt-4">
+                <AlertTriangle className="w-3 h-3 mt-0.5 flex-shrink-0" />
+                <span>
+                  Your API keys are encrypted and stored securely. We never share or log your keys. 
+                  Get your keys from the{' '}
+                  <a 
+                    href="https://openwebninja.com/dashboard" 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    className="text-violet-400 hover:underline"
+                  >
+                    OpenWeb Ninja Dashboard
+                  </a>
+                </span>
+              </div>
 
               {/* Actions */}
-              <div className="flex gap-3 pt-4">
+              <div className="flex gap-3 pt-4 border-t border-white/10">
                 <button
                   type="button"
                   onClick={onClose}
@@ -270,50 +347,52 @@ export function OpenWebNinjaModal({ onClose, onConfigured }: OpenWebNinjaModalPr
                 </button>
                 <Button
                   type="submit"
-                  disabled={loading || !apiKey.trim() || testing}
+                  disabled={loading || !hasAnyKeys}
                   className="flex-1 bg-gradient-to-r from-violet-600 to-pink-600 disabled:opacity-50"
                 >
                   {loading ? (
                     <Loader2 className="w-4 h-4 animate-spin" />
-                  ) : isConfigured ? (
-                    'Update Configuration'
+                  ) : configuredCount > 0 ? (
+                    'Update APIs'
                   ) : (
-                    'Save Configuration'
+                    'Save API Keys'
                   )}
                 </Button>
               </div>
             </form>
           )}
 
-          {activeTab === 'platforms' && (
+          {activeTab === 'overview' && (
             <div className="space-y-4">
               <p className="text-slate-300 text-sm">
-                OpenWeb Ninja provides access to the following e-commerce platforms:
+                OpenWeb Ninja provides access to the following e-commerce platforms for product research:
               </p>
               
               <div className="grid gap-4">
-                {PLATFORMS.map((platform) => (
+                {SERVICES.map((service) => (
                   <div
-                    key={platform.id}
-                    className="p-4 bg-white/5 border border-white/10 rounded-xl hover:border-white/20 transition-colors"
+                    key={service.id}
+                    className="p-4 bg-white/5 border border-white/10 rounded-xl"
                   >
                     <div className="flex items-start gap-3">
-                      <div className={`p-2 ${platform.bgColor} rounded-lg`}>
-                        <platform.icon className={`w-5 h-5 ${platform.color}`} />
+                      <div className={`p-2 ${service.bgColor} rounded-lg`}>
+                        <service.icon className={`w-5 h-5 ${service.color}`} />
                       </div>
                       <div className="flex-1">
-                        <h3 className="font-semibold text-white">{platform.name}</h3>
-                        <p className="text-sm text-slate-400 mt-1">{platform.description}</p>
-                        <div className="flex flex-wrap gap-2 mt-3">
-                          {platform.features.map((feature) => (
-                            <span
-                              key={feature}
-                              className="px-2 py-0.5 bg-white/5 rounded text-xs text-slate-500"
-                            >
-                              {feature}
+                        <div className="flex items-center justify-between">
+                          <h3 className="font-semibold text-white">{service.name}</h3>
+                          {configuredServices[service.id] ? (
+                            <span className="text-xs px-2 py-0.5 bg-green-500/20 text-green-400 rounded-full flex items-center gap-1">
+                              <Check className="w-3 h-3" />
+                              Connected
                             </span>
-                          ))}
+                          ) : (
+                            <span className="text-xs px-2 py-0.5 bg-slate-500/20 text-slate-400 rounded-full">
+                              Not connected
+                            </span>
+                          )}
                         </div>
+                        <p className="text-sm text-slate-400 mt-1">{service.description}</p>
                       </div>
                     </div>
                   </div>
@@ -321,7 +400,7 @@ export function OpenWebNinjaModal({ onClose, onConfigured }: OpenWebNinjaModalPr
               </div>
 
               <div className="p-4 bg-violet-500/10 border border-violet-500/30 rounded-xl mt-4">
-                <h4 className="font-medium text-violet-300 mb-2">Research Capabilities</h4>
+                <h4 className="font-medium text-violet-300 mb-3">Research Capabilities</h4>
                 <ul className="space-y-2 text-sm text-slate-400">
                   <li className="flex items-center gap-2">
                     <Check className="w-4 h-4 text-violet-400" />
@@ -342,6 +421,10 @@ export function OpenWebNinjaModal({ onClose, onConfigured }: OpenWebNinjaModalPr
                   <li className="flex items-center gap-2">
                     <Check className="w-4 h-4 text-violet-400" />
                     Track reviews and ratings to validate product quality
+                  </li>
+                  <li className="flex items-center gap-2">
+                    <Check className="w-4 h-4 text-violet-400" />
+                    Identify arbitrage opportunities between platforms
                   </li>
                 </ul>
               </div>

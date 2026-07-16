@@ -127,10 +127,15 @@ export const api = {
 
   // OpenWeb Ninja - Product Research APIs
   openwebninja: {
-    configure: (apiKey: string, storeId?: string) =>
-      api.request('/openwebninja/configure', { 
+    configure: (service: string, apiKey: string, storeId?: string) =>
+      api.request(`/openwebninja/configure/${service}${storeId ? `?storeId=${storeId}` : ''}`, { 
         method: 'POST', 
-        body: JSON.stringify({ apiKey, storeId }) 
+        body: JSON.stringify({ apiKey }) 
+      }),
+    configureAll: (apiKeys: Record<string, string>, storeId?: string) =>
+      api.request(`/openwebninja/configure-all${storeId ? `?storeId=${storeId}` : ''}`, { 
+        method: 'POST', 
+        body: JSON.stringify({ apiKeys }) 
       }),
     getConfig: (storeId?: string) => 
       api.request(`/openwebninja/config${storeId ? `?storeId=${storeId}` : ''}`),
