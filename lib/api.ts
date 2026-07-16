@@ -1,9 +1,28 @@
 // API client for ShoppDropp backend
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://shoppdropp-api.onrender.com'
 
+// Import supabase to get session
+import { createBrowserClient } from '@supabase/ssr'
+
+function getSupabaseClient() {
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL
+  const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+  if (!url || !key) return null
+  return createBrowserClient(url, key)
+}
+
 export const api = {
   async getToken(): Promise<string | null> {
-    return localStorage.getItem('token')
+    // Try localStorage first (for our JWT)
+    const localToken = localStorage.getItem('token')
+    if (localToken) return localToken
+    
+    // Fallback to Supabase session
+    const supabase = getSupabaseClient()
+    if (!supabase) return null
+    
+    const { data: { session } } = await supabase.auth.getSession()
+    return session?.access_token || null
   },
 
   async request(endpoint: string, options: RequestInit = {}) {
@@ -52,11 +71,27 @@ export const api = {
     getStatus: (id: string) => api.request(`/workers/${id}/status`),
   },
 
+  // VPS Management
+  vps: {
+    provision: (workerId: string, envVars?: Record<string, string>) =>
+      api.request(`/vps/provision/${workerId}`, { method: 'POST', body: JSON.stringify({ envVars }) }),
+    getStatus: (workerId: string) => api.request(`/vps/status/${workerId}`),
+    getMetrics: (workerId: string) => api.request(`/vps/metrics/${workerId}`),
+    reboot: (workerId: string) => api.request(`/vps/reboot/${workerId}`, { method: 'POST' }),
+    destroy: (workerId: string) => api.request(`/vps/${workerId}`, { method: 'DELETE' }),
+    getServerTypes: () => api.request('/vps/server-types'),
+    getLocations: () => api.request('/vps/locations'),
+  },
+
   // AI Provider
   ai: {
     configure: (provider: string, model: string, apiKey: string) =>
       api.request('/ai/configure', { method: 'POST', body: JSON.stringify({ provider, model, apiKey }) }),
     getConfig: () => api.request('/ai/config'),
+    // AI Chat with OpenRouter
+    chat: (message: string, conversationHistory: any[] = []) =>
+      api.request('/ai-chat/chat', { method: 'POST', body: JSON.stringify({ message, conversation_history: conversationHistory }) }),
+    getContext: () => api.request('/ai-chat/context'),
   },
 
   // Stripe

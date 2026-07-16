@@ -137,6 +137,9 @@ export function AuthProvider({ children }: AuthProviderProps) {
   const signOut = useCallback(async () => {
     if (!supabaseRef.current) return;
     
+    // Clear our custom token too
+    localStorage.removeItem('token');
+    
     await supabaseRef.current.auth.signOut();
   }, []);
 

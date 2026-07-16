@@ -3,15 +3,17 @@
 import { useState } from 'react'
 import { 
   Store, MessageCircle, ShoppingBag, Brain, Code2, Triangle, 
-  Link2, CheckCircle, AlertCircle, ChevronRight 
+  Link2, CheckCircle, AlertCircle, ChevronRight, Zap, Cloud
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 
 interface StoreIntegrationsProps {
   storeId: string
+  storeName: string
   onConnectShopify: () => void
   onConnectMeta: () => void
   onConnectAutoDS: () => void
+  onConnectCJDropshipping: () => void
   onConfigureAI: () => void
   onConnectGitHub: () => void
   onConnectVercel: () => void
@@ -19,13 +21,15 @@ interface StoreIntegrationsProps {
     shopify?: { connected: boolean }
     meta_ads?: { connected: boolean }
     autods?: { connected: boolean }
+    cj_dropshipping?: { connected: boolean }
     ai?: { connected: boolean }
     github?: { connected: boolean }
     vercel?: { connected: boolean }
+    rapidapi?: { connected: boolean; apis?: string[] }
   }
 }
 
-const INTEGRATIONS = [
+const getIntegrations = (isHappyPuppy: boolean) => [
   {
     id: 'shopify' as const,
     name: 'Shopify',
@@ -46,7 +50,16 @@ const INTEGRATIONS = [
     textColor: 'text-blue-400',
     required: false,
   },
-  {
+  ...(isHappyPuppy ? [{
+    id: 'cj_dropshipping' as const,
+    name: 'CJ Dropshipping',
+    description: 'Product sourcing & fulfillment',
+    icon: Cloud,
+    color: 'orange',
+    bgColor: 'bg-orange-500/20',
+    textColor: 'text-orange-400',
+    required: false,
+  }] : [{
     id: 'autods' as const,
     name: 'AutoDS',
     description: 'Product sourcing & fulfillment',
@@ -55,7 +68,7 @@ const INTEGRATIONS = [
     bgColor: 'bg-orange-500/20',
     textColor: 'text-orange-400',
     required: false,
-  },
+  }]),
   {
     id: 'ai' as const,
     name: 'AI Provider',
@@ -88,29 +101,48 @@ const INTEGRATIONS = [
   },
 ]
 
+const RAPIDAPI_INTEGRATION = {
+  id: 'rapidapi' as const,
+  name: 'RapidAPI',
+  description: 'Access 40,000+ APIs for data enrichment',
+  icon: Zap,
+  color: 'cyan',
+  bgColor: 'bg-cyan-500/20',
+  textColor: 'text-cyan-400',
+  required: false,
+}
+
 const HANDLERS: Record<string, string> = {
   shopify: 'onConnectShopify',
   meta_ads: 'onConnectMeta',
   autods: 'onConnectAutoDS',
+  cj_dropshipping: 'onConnectCJDropshipping',
   ai: 'onConfigureAI',
   github: 'onConnectGitHub',
   vercel: 'onConnectVercel',
+  rapidapi: 'onConnectRapidAPI',
 }
 
 export function StoreIntegrations({ 
-  storeId, 
+  storeId,
+  storeName,
   onConnectShopify,
   onConnectMeta,
   onConnectAutoDS,
+  onConnectCJDropshipping,
   onConfigureAI,
   onConnectGitHub,
   onConnectVercel,
   integrations 
 }: StoreIntegrationsProps) {
+  const isHappyPuppy = storeName.toLowerCase().includes('happy puppy')
+  const INTEGRATIONS = getIntegrations(isHappyPuppy)
+  
   const handlers: Record<string, () => void> = {
     shopify: onConnectShopify,
     meta_ads: onConnectMeta,
     autods: onConnectAutoDS,
+    cj_dropshipping: onConnectCJDropshipping,
     ai: onConfigureAI,
     github: onConnectGitHub,
     vercel: onConnectVercel,
@@ -124,11 +156,17 @@ export function StoreIntegrations({
   const getDetails = (id: string) => {
     const integration = integrations[id as keyof typeof integrations]
     if (!integration?.connected) return 'Not connected'
+    if (id === 'rapidapi') {
+      const rapidapi = integration as { connected: boolean; apis?: string[] }
+      if (rapidapi.apis && rapidapi.apis.length > 0) {
+        return `${rapidapi.apis.length} APIs connected`
+      }
+    }
     return 'Connected'
   }
 
   const connectedCount = Object.values(integrations).filter(i => i?.connected).length
-  const totalCount = INTEGRATIONS.length
+  const totalCount = INTEGRATIONS.length + 1 // +1 for RapidAPI
 
   return (
     <div className="space-y-6">
@@ -212,6 +250,57 @@ export function StoreIntegrations({
             </div>
           )
         })}
+        
+        {/* RapidAPI Card */}
+        {(() => {
+          const isConnected = getStatus('rapidapi')
+          const Icon = RAPIDAPI_INTEGRATION.icon
+          return (
+            <div 
+              className={`p-4 rounded-xl border ${
+                isConnected 
+                  ? 'bg-white/5 border-white/20' 
+                  : 'bg-white/[0.02] border-white/10 hover:border-white/20'
+              } transition-all`}
+            >
+              <div className="flex items-start justify-between mb-3">
+                <div className="flex items-center gap-3">
+                  <div className={`p-2 ${RAPIDAPI_INTEGRATION.bgColor} rounded-lg`}>
+                    <Icon className={`w-5 h-5 ${RAPIDAPI_INTEGRATION.textColor}`} />
+                  </div>
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <h4 className="font-medium text-white">{RAPIDAPI_INTEGRATION.name}</h4>
+                    </div>
+                    <p className="text-xs text-slate-400">{RAPIDAPI_INTEGRATION.description}</p>
+                  </div>
+                </div>
+                {isConnected ? (
+                  <CheckCircle className="w-5 h-5 text-green-400" />
+                ) : (
+                  <AlertCircle className="w-5 h-5 text-slate-600" />
+                )}
+              </div>
+              
+              <div className="flex items-center justify-between">
+                <span className={`text-xs ${isConnected ? 'text-green-400' : 'text-slate-500'}`}>
+                  {getDetails('rapidapi')}
+                </span>
+                <Button
+                  size="sm"
+                  variant={isConnected ? "outline" : "default"}
+                  className={isConnected 
+                    ? 'border-white/20 text-slate-300 hover:bg-white/5' 
+                    : 'bg-gradient-to-r from-cyan-600 to-blue-600'
+                  }
+                >
+                  {isConnected ? 'Manage' : 'Connect'}
+                  <ChevronRight className="w-3 h-3 ml-1" />
+                </Button>
+              </div>
+            </div>
+          )
+        })()}
       </div>
     </div>
   )

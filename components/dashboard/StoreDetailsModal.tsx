@@ -33,15 +33,18 @@ export function StoreDetailsModal({ store, onClose }: StoreDetailsModalProps) {
     shopify: { connected: false },
     meta_ads: { connected: false },
     autods: { connected: false },
+    cj_dropshipping: { connected: false },
     ai: { connected: false },
     github: { connected: false },
     vercel: { connected: false },
+    rapidapi: { connected: false, apis: [] as string[] },
   })
   
   // Modal states
   const [showShopifyModal, setShowShopifyModal] = useState(false)
   const [showMetaModal, setShowMetaModal] = useState(false)
   const [showAutoDSModal, setShowAutoDSModal] = useState(false)
+  const [showCJModal, setShowCJModal] = useState(false)
   const [showAIModal, setShowAIModal] = useState(false)
   const [showGitHubModal, setShowGitHubModal] = useState(false)
   const [showVercelModal, setShowVercelModal] = useState(false)
@@ -63,14 +66,21 @@ export function StoreDetailsModal({ store, onClose }: StoreDetailsModalProps) {
       const shopifyCreds = creds.find((c: any) => c.type === 'shopify')
       const metaCreds = creds.find((c: any) => c.type === 'meta_ads')
       const autodsCreds = creds.find((c: any) => c.type === 'autods')
+      const cjCreds = creds.find((c: any) => c.type === 'cj_dropshipping')
+      const rapidapiCreds = creds.find((c: any) => c.type === 'rapidapi')
 
       setIntegrations({
         shopify: { connected: !!shopifyCreds },
         meta_ads: { connected: !!metaCreds },
         autods: { connected: !!autodsCreds },
+        cj_dropshipping: { connected: !!cjCreds },
         ai: { connected: aiConfig.configured },
         github: { connected: githubConfig.connected },
         vercel: { connected: vercelConfig.connected },
+        rapidapi: { 
+          connected: !!rapidapiCreds, 
+          apis: rapidapiCreds?.metadata?.apis || []
+        },
       })
     } catch (error) {
       console.error('Failed to load integrations:', error)
@@ -132,10 +142,12 @@ export function StoreDetailsModal({ store, onClose }: StoreDetailsModalProps) {
           {/* Integrations */}
           <StoreIntegrations
             storeId={store.id}
+            storeName={store.name}
             integrations={integrations}
             onConnectShopify={() => setShowShopifyModal(true)}
             onConnectMeta={() => setShowMetaModal(true)}
             onConnectAutoDS={() => setShowAutoDSModal(true)}
+            onConnectCJDropshipping={() => setShowCJModal(true)}
             onConfigureAI={() => setShowAIModal(true)}
             onConnectGitHub={() => setShowGitHubModal(true)}
             onConnectVercel={() => setShowVercelModal(true)}
@@ -207,6 +219,52 @@ export function StoreDetailsModal({ store, onClose }: StoreDetailsModalProps) {
           onClose={() => setShowAutoDSModal(false)}
           onConnected={loadIntegrations}
         />
+      )}
+      {showCJModal && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-[60] p-4">
+          <div className="w-full max-w-md bg-[#111118] rounded-2xl border border-white/10 p-6">
+            <h3 className="text-xl font-bold text-white mb-2">Connect CJ Dropshipping</h3>
+            <p className="text-slate-400 text-sm mb-4">
+              Enter your CJ Dropshipping API credentials to enable product sourcing.
+            </p>
+            <div className="space-y-4">
+              <div>
+                <label className="text-sm text-slate-400 block mb-1">API Key</label>
+                <input 
+                  type="text" 
+                  placeholder="Enter your CJ API key"
+                  className="w-full px-3 py-2 bg-white/5 border border-white/10 rounded-lg text-white"
+                />
+              </div>
+              <div>
+                <label className="text-sm text-slate-400 block mb-1">Email</label>
+                <input 
+                  type="email" 
+                  placeholder="your@email.com"
+                  className="w-full px-3 py-2 bg-white/5 border border-white/10 rounded-lg text-white"
+                />
+              </div>
+            </div>
+            <div className="flex gap-3 mt-6">
+              <Button 
+                variant="outline" 
+                onClick={() => setShowCJModal(false)}
+                className="flex-1 border-white/20 text-white"
+              >
+                Cancel
+              </Button>
+              <Button 
+                className="flex-1 bg-orange-600 hover:bg-orange-700"
+                onClick={() => {
+                  setShowCJModal(false)
+                  loadIntegrations()
+                }}
+              >
+                Connect
+              </Button>
+            </div>
+          </div>
+        </div>
       )}
       {showAIModal && (
         <AIProviderModal
