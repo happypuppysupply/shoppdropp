@@ -160,6 +160,11 @@ export const api = {
         body: JSON.stringify({ category, limit: limit || 20 })
       }),
   },
+
+  // Setup
+  setup: {
+    ensureStore: () => api.request('/setup/ensure-store', { method: 'POST' }),
+  },
 }
 
 export default api

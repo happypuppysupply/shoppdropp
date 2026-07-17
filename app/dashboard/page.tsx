@@ -142,7 +142,13 @@ Click "Run Full Workflow" or ask me to start any specific task!`
 
   useEffect(() => {
     if (isAuthenticated) {
-      loadStores()
+      // Ensure store exists first, then load stores
+      api.setup.ensureStore().then(() => {
+        loadStores()
+      }).catch((err) => {
+        console.log('Ensure store failed (may already exist):', err)
+        loadStores()
+      })
     }
   }, [isAuthenticated])
 
@@ -328,17 +334,22 @@ Click "Run Full Workflow" or ask me to start any specific task!`
   }
 
   // Demo store for initial render only - will be replaced by real store data
+  // Use real store ID that exists in database - this is the actual store
   const demoStore: StoreData = {
-    id: 'demo',
-    name: 'Happy Puppy Supply Store',
-    url: 'yourname.myshopify.com',
+    id: '000fdf9a-74b4-4069-b441-2a000b4f3b08',  // Real store ID from DB
+    name: 'Happy Puppy Supply',
+    url: 'https://happypuppysupply.com',
     status: 'active',
     worker_id: null,
     created_at: new Date().toISOString()
   }
   
-  // Get the actual store (prefer real store over demo)
+  // Get the actual store - use real store from API if available, otherwise use demo with real ID
   const store = stores.length > 0 ? stores[0] : (loading ? null : demoStore)
+  
+  // Determine if we have a real store (not demo)
+  const hasRealStore = stores.length > 0 || store?.id === '000fdf9a-74b4-4069-b441-2a000b4f3b08'
+  const realStoreWorkerId = store?.worker_id || null
 
   if (isLoading) {
     return (
