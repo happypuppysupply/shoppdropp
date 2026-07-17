@@ -209,7 +209,7 @@ Click "Run Full Workflow" or ask me to start any specific task!`
 
   async function provisionVps() {
     if (!store) return
-    const workerId = store.worker_id
+    const workerId = currentStore.worker_id
     if (!workerId) return
     
     try {
@@ -245,7 +245,7 @@ Click "Run Full Workflow" or ask me to start any specific task!`
     if (!store?.worker_id) return
     
     try {
-      await api.vps.reboot(store.worker_id)
+      await api.vps.reboot(currentStore.worker_id)
       await loadVpsStatus()
     } catch (error) {
       console.error('Failed to reboot VPS:', error)
@@ -256,7 +256,7 @@ Click "Run Full Workflow" or ask me to start any specific task!`
     if (!store?.worker_id) return
     
     try {
-      await api.vps.stop(store.worker_id)
+      await api.vps.stop(currentStore.worker_id)
       await loadVpsStatus()
     } catch (error) {
       console.error('Failed to stop VPS:', error)
@@ -267,7 +267,7 @@ Click "Run Full Workflow" or ask me to start any specific task!`
     if (!store?.worker_id) return
     
     try {
-      await api.vps.pause(store.worker_id)
+      await api.vps.pause(currentStore.worker_id)
       await loadVpsStatus()
     } catch (error) {
       console.error('Failed to pause VPS:', error)
@@ -282,7 +282,7 @@ Click "Run Full Workflow" or ask me to start any specific task!`
     }
     
     try {
-      await api.vps.destroy(store.worker_id)
+      await api.vps.destroy(currentStore.worker_id)
       setVpsStatus({
         provisioned: false,
         status: 'idle',
@@ -330,7 +330,7 @@ Click "Run Full Workflow" or ask me to start any specific task!`
       
       // If a command was executed, refresh VPS status
       if (response.command_executed) {
-        if (store.worker_id) {
+        if (store?.worker_id) {
           loadVpsStatus()
         }
       }
@@ -367,7 +367,7 @@ Click "Run Full Workflow" or ask me to start any specific task!`
     return null
   }
 
-  // store is already defined above
+  // If store is null, show loading
   if (!store) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-[#050508]">
@@ -378,6 +378,9 @@ Click "Run Full Workflow" or ask me to start any specific task!`
       </div>
     )
   }
+
+  // After this point, store is guaranteed to be non-null
+  const currentStore = store!
 
   return (
     <div className="flex h-screen bg-[#050508]">
@@ -401,8 +404,8 @@ Click "Run Full Workflow" or ask me to start any specific task!`
               <Store className="w-5 h-5 text-violet-400" />
             </div>
             <div className="min-w-0">
-              <h3 className="font-semibold text-white text-sm truncate">{store.name}</h3>
-              <p className="text-xs text-slate-500 truncate">{store.url}</p>
+              <h3 className="font-semibold text-white text-sm truncate">{currentStore.name}</h3>
+              <p className="text-xs text-slate-500 truncate">{currentStore.url}</p>
             </div>
           </div>
         </div>
@@ -486,14 +489,14 @@ Click "Run Full Workflow" or ask me to start any specific task!`
                   <div>
                     <h1 className="text-2xl font-bold text-white">AI Workflow</h1>
                     <p className="text-sm text-slate-400">
-                      {!store.worker_id 
+                      {!currentStore.worker_id 
                         ? 'Provision a VPS worker to get started'
                         : 'Ready to start your dropshipping automation'}
                     </p>
                   </div>
                 </div>
                 <div className="flex items-center gap-3">
-                  {store.worker_id && (
+                  {currentStore.worker_id && (
                     <Button 
                       size="sm" 
                       className="bg-gradient-to-r from-violet-600 to-pink-600"
@@ -504,15 +507,15 @@ Click "Run Full Workflow" or ask me to start any specific task!`
                     </Button>
                   )}
                   <div className={`flex items-center gap-2 px-3 py-1.5 rounded-full border ${
-                    store.worker_id 
+                    currentStore.worker_id 
                       ? 'bg-green-500/10 border-green-500/30' 
                       : 'bg-yellow-500/10 border-yellow-500/30'
                   }`}>
                     <div className={`w-2 h-2 rounded-full ${
-                      store.worker_id ? 'bg-green-500 animate-pulse' : 'bg-yellow-500'
+                      currentStore.worker_id ? 'bg-green-500 animate-pulse' : 'bg-yellow-500'
                     }`} />
-                    <span className={`text-sm ${store.worker_id ? 'text-green-400' : 'text-yellow-400'}`}>
-                      {store.worker_id ? 'Worker Ready' : 'No Worker'}
+                    <span className={`text-sm ${currentStore.worker_id ? 'text-green-400' : 'text-yellow-400'}`}>
+                      {currentStore.worker_id ? 'Worker Ready' : 'No Worker'}
                     </span>
                   </div>
                 </div>
@@ -520,7 +523,7 @@ Click "Run Full Workflow" or ask me to start any specific task!`
 
               {/* Hetzner VPS Card */}
               <VPSCard 
-                workerId={store.worker_id}
+                workerId={currentStore.worker_id}
                 status={vpsStatus}
                 onProvision={provisionVps}
                 onReboot={rebootVps}
@@ -639,8 +642,8 @@ Click "Run Full Workflow" or ask me to start any specific task!`
                         <Store className="w-7 h-7 text-violet-400" />
                       </div>
                       <div>
-                        <h3 className="font-semibold text-lg text-white">{store.name}</h3>
-                        <p className="text-sm text-slate-400">{store.url}</p>
+                        <h3 className="font-semibold text-lg text-white">{currentStore.name}</h3>
+                        <p className="text-sm text-slate-400">{currentStore.url}</p>
                       </div>
                     </div>
                     <div className="flex items-center gap-3">
@@ -676,8 +679,8 @@ Click "Run Full Workflow" or ask me to start any specific task!`
                 <h1 className="text-2xl font-bold text-white">Integrations</h1>
               </div>
               <StoreIntegrations
-                storeId={store.id}
-                storeName={store.name}
+                storeId={currentStore.id}
+                storeName={currentStore.name}
                 integrations={integrations}
                 onConnectShopify={() => {}}
                 onConnectMeta={() => {}}
