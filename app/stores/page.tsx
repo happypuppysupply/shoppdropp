@@ -34,9 +34,36 @@ export default function StoresGridPage() {
   async function loadStores() {
     try {
       const data = await api.stores.list()
-      // Add demo store if no stores exist
+      // Add demo stores if no stores exist
       if (data.length === 0) {
-        setStores([{
+        setStores([
+          {
+            id: '000fdf9a-74b4-4069-b441-2a000b4f3b08',
+            name: 'Happy Puppy Supply',
+            url: 'https://happypuppysupply.com',
+            status: 'active',
+            worker_id: null,
+            created_at: new Date().toISOString(),
+            niche: 'Pet Supplies'
+          },
+          {
+            id: '111fdf9a-74b4-4069-b441-2a000b4f3b09',
+            name: 'Beauty Glow Co',
+            url: 'https://beautyglowco.com',
+            status: 'active',
+            worker_id: 'a1234567-1234-1234-1234-123456789012',
+            created_at: new Date().toISOString(),
+            niche: 'Beauty & Personal Care'
+          }
+        ])
+      } else {
+        setStores(data)
+      }
+    } catch (error) {
+      console.error('Failed to load stores:', error)
+      // Show demo stores on error
+      setStores([
+        {
           id: '000fdf9a-74b4-4069-b441-2a000b4f3b08',
           name: 'Happy Puppy Supply',
           url: 'https://happypuppysupply.com',
@@ -44,22 +71,17 @@ export default function StoresGridPage() {
           worker_id: null,
           created_at: new Date().toISOString(),
           niche: 'Pet Supplies'
-        }])
-      } else {
-        setStores(data)
-      }
-    } catch (error) {
-      console.error('Failed to load stores:', error)
-      // Show demo store on error
-      setStores([{
-        id: '000fdf9a-74b4-4069-b441-2a000b4f3b08',
-        name: 'Happy Puppy Supply',
-        url: 'https://happypuppysupply.com',
-        status: 'active',
-        worker_id: null,
-        created_at: new Date().toISOString(),
-        niche: 'Pet Supplies'
-      }])
+        },
+        {
+          id: '111fdf9a-74b4-4069-b441-2a000b4f3b09',
+          name: 'Beauty Glow Co',
+          url: 'https://beautyglowco.com',
+          status: 'active',
+          worker_id: 'a1234567-1234-1234-1234-123456789012',
+          created_at: new Date().toISOString(),
+          niche: 'Beauty & Personal Care'
+        }
+      ])
     } finally {
       setLoading(false)
     }
