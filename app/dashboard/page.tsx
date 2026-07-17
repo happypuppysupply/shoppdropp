@@ -480,15 +480,16 @@ export default function DashboardPage() {
                 <div className="absolute left-8 top-16 bottom-16 w-0.5 bg-gradient-to-b from-blue-500 via-orange-500 via-pink-500 to-violet-500 opacity-30" />
                 
                 <div className="space-y-4">
-                  {/* Step 1: Product Research */}
+                  {/* Step 1: Product Research - Ready to run */}
                   <WorkflowStep
                     number={1}
                     title="Product Research"
                     description="AI analyzes trending products, competitor data, and market demand"
                     icon={Search}
                     color="blue"
-                    status="pending"
+                    status="ready"
                     details={["Will search for trending products in your niche", "Analyze competitor pricing and demand"]}
+                    onRun={() => alert('Starting Product Research...')}
                   />
 
                   {/* Step 2: CJ Dropshipping Import */}
@@ -498,7 +499,7 @@ export default function DashboardPage() {
                     description="Import winning products from CJ Dropshipping to Shopify"
                     icon={Package}
                     color="orange"
-                    status="pending"
+                    status="locked"
                     details={["Sync inventory from CJ Dropshipping", "Auto-import to your Shopify store"]}
                   />
 
@@ -509,7 +510,7 @@ export default function DashboardPage() {
                     description="Auto-create and launch Facebook & Instagram campaigns"
                     icon={Target}
                     color="pink"
-                    status="pending"
+                    status="locked"
                     details={["Create ad creatives with AI", "Launch campaigns with your budget"]}
                   />
 
@@ -520,7 +521,7 @@ export default function DashboardPage() {
                     description="Track ROAS, conversions, and performance metrics"
                     icon={BarChart3}
                     color="violet"
-                    status="pending"
+                    status="locked"
                     details={["Monitor ad performance daily", "Track sales and ROI metrics"]}
                   />
 
@@ -531,7 +532,7 @@ export default function DashboardPage() {
                     description="AI analyzes performance and suggests improvements"
                     icon={RotateCcw}
                     color="emerald"
-                    status="pending"
+                    status="locked"
                     details={["Auto-adjust based on performance", "Scale winning campaigns"]}
                   />
                 </div>
@@ -772,11 +773,12 @@ interface WorkflowStepProps {
   description: string
   icon: React.ElementType
   color: 'blue' | 'orange' | 'pink' | 'violet' | 'emerald'
-  status: 'completed' | 'in_progress' | 'pending'
+  status: 'completed' | 'in_progress' | 'pending' | 'ready' | 'locked'
   details: string[]
+  onRun?: () => void
 }
 
-function WorkflowStep({ number, title, description, icon: Icon, color, status, details }: WorkflowStepProps) {
+function WorkflowStep({ number, title, description, icon: Icon, color, status, details, onRun }: WorkflowStepProps) {
   const colorStyles = {
     blue: { bg: 'bg-blue-500/20', text: 'text-blue-400', border: 'border-blue-500/30', gradient: 'from-blue-500 to-blue-600' },
     orange: { bg: 'bg-orange-500/20', text: 'text-orange-400', border: 'border-orange-500/30', gradient: 'from-orange-500 to-orange-600' },
@@ -788,7 +790,12 @@ function WorkflowStep({ number, title, description, icon: Icon, color, status, d
   const styles = colorStyles[color]
 
   return (
-    <div className={`relative flex gap-4 p-4 rounded-xl border ${status === 'completed' ? 'bg-white/5 border-white/20' : status === 'in_progress' ? 'bg-white/[0.03] border-white/20' : 'bg-transparent border-white/5'} transition-all`}>
+    <div className={`relative flex gap-4 p-4 rounded-xl border transition-all ${
+      status === 'completed' ? 'bg-white/5 border-white/20' : 
+      status === 'in_progress' ? 'bg-white/[0.03] border-white/20' : 
+      status === 'ready' ? 'bg-violet-500/5 border-violet-500/30' :
+      'bg-transparent border-white/5 opacity-60'
+    }`}>
       {/* Step Number */}
       <div className="relative z-10 flex-shrink-0">
         <div className={`w-16 h-16 rounded-2xl ${styles.bg} border ${styles.border} flex items-center justify-center`}>
@@ -801,6 +808,10 @@ function WorkflowStep({ number, title, description, icon: Icon, color, status, d
           ) : status === 'in_progress' ? (
             <div className={`w-8 h-8 rounded-full bg-gradient-to-r ${styles.gradient} flex items-center justify-center animate-pulse`}>
               <span className="text-white font-bold text-sm">{number}</span>
+            </div>
+          ) : status === 'ready' ? (
+            <div className={`w-8 h-8 rounded-full bg-gradient-to-r ${styles.gradient} flex items-center justify-center`}>
+              <Play className="w-4 h-4 text-white" />
             </div>
           ) : (
             <span className={`${styles.text} font-bold text-xl`}>{number}</span>
@@ -816,6 +827,11 @@ function WorkflowStep({ number, title, description, icon: Icon, color, status, d
           {status === 'in_progress' && (
             <span className="px-2 py-0.5 rounded-full text-xs bg-violet-500/20 text-violet-400 border border-violet-500/30">
               Running
+            </span>
+          )}
+          {status === 'ready' && (
+            <span className="px-2 py-0.5 rounded-full text-xs bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
+              Ready
             </span>
           )}
           {status === 'completed' && (
@@ -840,6 +856,11 @@ function WorkflowStep({ number, title, description, icon: Icon, color, status, d
                   <div className="w-1.5 h-1.5 rounded-full bg-green-500" />
                   <span>{detail}</span>
                 </>
+              ) : status === 'ready' ? (
+                <>
+                  <div className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                  <span className="text-emerald-400">{detail}</span>
+                </>
               ) : (
                 <>
                   <div className="w-1.5 h-1.5 rounded-full bg-slate-600" />
@@ -853,14 +874,26 @@ function WorkflowStep({ number, title, description, icon: Icon, color, status, d
 
       {/* Action Button */}
       <div className="flex-shrink-0 flex items-center">
-        {status === 'pending' ? (
+        {status === 'locked' ? (
+          <Button size="sm" variant="outline" className="border-white/20 text-slate-500" disabled>
+            <svg className="w-3.5 h-3.5 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+            </svg>
+            Locked
+          </Button>
+        ) : status === 'ready' ? (
+          <Button size="sm" className={`bg-gradient-to-r ${styles.gradient}`} onClick={onRun}>
+            <Play className="w-3 h-3 mr-1" />
+            Run
+          </Button>
+        ) : status === 'pending' ? (
           <Button size="sm" variant="outline" className="border-white/20 text-slate-400" disabled>
             Waiting
           </Button>
         ) : status === 'in_progress' ? (
-          <Button size="sm" className={`bg-gradient-to-r ${styles.gradient}`}>
-            <Play className="w-3 h-3 mr-1" />
-            Run
+          <Button size="sm" variant="outline" className="border-yellow-500/30 text-yellow-400" disabled>
+            <Loader2 className="w-3 h-3 mr-1 animate-spin" />
+            Running
           </Button>
         ) : (
           <Button size="sm" variant="outline" className="border-white/20 text-slate-300 hover:bg-white/5">

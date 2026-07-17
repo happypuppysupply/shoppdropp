@@ -44,6 +44,7 @@ interface BuildState {
     memory?: number
     disk?: number
   }
+  workerCreatedAt?: string
 }
 
 const BUILD_STEPS: BuildStep[] = [
@@ -57,6 +58,18 @@ const BUILD_STEPS: BuildStep[] = [
   { id: 8, title: 'Ready', description: 'VPS worker is ready for tasks', status: 'pending', progress: 0 },
 ]
 
+// Step timing configuration (in seconds)
+const STEP_TIMINGS = [
+  { step: 0, duration: 45, name: 'Initialize VPS' },      // 0-45s: Creating server
+  { step: 1, duration: 90, name: 'Install Dependencies' }, // 45-135s: Installing packages
+  { step: 2, duration: 30, name: 'Configure SSH' },       // 135-165s: SSH setup
+  { step: 3, duration: 40, name: 'Install OpenClaw' },    // 165-205s: Installing OpenClaw
+  { step: 4, duration: 30, name: 'Configure Environment' }, // 205-235s: Env setup
+  { step: 5, duration: 40, name: 'Start Services' },      // 235-275s: Starting services
+  { step: 6, duration: 30, name: 'Health Check' },        // 275-305s: Health check
+  { step: 7, duration: 10, name: 'Ready' },               // 305s+: Ready
+]
+
 export default function BuildProgressPage() {
   const router = useRouter()
   const { isAuthenticated, isLoading } = useAuth()
@@ -65,11 +78,12 @@ export default function BuildProgressPage() {
     currentStep: 0,
     status: 'idle',
     elapsedTime: 0,
-    estimatedRemaining: 240,
-    steps: BUILD_STEPS,
+    estimatedRemaining: 300,
+    steps: JSON.parse(JSON.stringify(BUILD_STEPS)),
     logs: []
   })
   const [workerId, setWorkerId] = useState<string | null>(null)
+  const [startTime, setStartTime] = useState<number | null>(null)
 
   const formatTime = (seconds: number) => {
     const mins = Math.floor(seconds / 60)
@@ -77,38 +91,48 @@ export default function BuildProgressPage() {
     return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`
   }
 
-  // Calculate progress based on actual worker status and logs
-  const calculateProgress = useCallback((status: string, logs: string[]): { step: number; progress: number } => {
-    if (status === 'running') return { step: 7, progress: 100 }
-    if (status === 'error') return { step: buildState.currentStep, progress: 0 }
+  // Calculate which step we're on based on elapsed time
+  const calculateStepFromElapsed = (elapsedSeconds: number): { step: number; stepProgress: number; overallProgress: number } => {
+    let accumulatedTime = 0
     
-    // Parse logs to determine actual progress
-    const logText = logs.join(' ').toLowerCase()
-    
-    if (logText.includes('health check') || logText.includes('service is active')) {
-      return { step: 6, progress: 90 }
-    }
-    if (logText.includes('start services') || logText.includes('systemctl start')) {
-      return { step: 5, progress: 75 }
-    }
-    if (logText.includes('configure environment') || logText.includes('.env')) {
-      return { step: 4, progress: 60 }
-    }
-    if (logText.includes('install openclaw') || logText.includes('worker script')) {
-      return { step: 3, progress: 45 }
-    }
-    if (logText.includes('configure ssh') || logText.includes('ssh') && logText.includes('connected')) {
-      return { step: 2, progress: 30 }
-    }
-    if (logText.includes('install dependencies') || logText.includes('node.js') || logText.includes('apt-get')) {
-      return { step: 1, progress: 15 }
-    }
-    if (logText.includes('provision start') || logText.includes('creating server')) {
-      return { step: 0, progress: 5 }
+    for (let i = 0; i < STEP_TIMINGS.length; i++) {
+      const stepTiming = STEP_TIMINGS[i]
+      
+      if (elapsedSeconds < accumulatedTime + stepTiming.duration) {
+        // We're in this step
+        const stepElapsed = elapsedSeconds - accumulatedTime
+        const stepProgress = Math.min(100, (stepElapsed / stepTiming.duration) * 100)
+        const overallProgress = Math.min(99, (i / STEP_TIMINGS.length) * 100 + (stepProgress / STEP_TIMINGS.length))
+        
+        return { step: i, stepProgress, overallProgress }
+      }
+      
+      accumulatedTime += stepTiming.duration
     }
     
-    return { step: 0, progress: 0 }
-  }, [buildState.currentStep])
+    // All steps complete
+    return { step: 7, stepProgress: 100, overallProgress: 100 }
+  }
+
+  // Update steps UI based on current step
+  const updateStepsUI = (currentStep: number, stepProgress: number): BuildStep[] => {
+    const newSteps = JSON.parse(JSON.stringify(BUILD_STEPS))
+    
+    for (let i = 0; i < newSteps.length; i++) {
+      if (i < currentStep) {
+        newSteps[i].status = 'completed'
+        newSteps[i].progress = 100
+      } else if (i === currentStep) {
+        newSteps[i].status = 'in_progress'
+        newSteps[i].progress = Math.round(stepProgress)
+      } else {
+        newSteps[i].status = 'pending'
+        newSteps[i].progress = 0
+      }
+    }
+    
+    return newSteps
+  }
 
   // Load real worker status from API
   const loadStatus = useCallback(async () => {
@@ -123,6 +147,10 @@ export default function BuildProgressPage() {
 
       if (worker.id !== workerId) {
         setWorkerId(worker.id)
+        // Set start time when we first see the worker
+        if (worker.created_at) {
+          setStartTime(new Date(worker.created_at).getTime())
+        }
       }
 
       // Fetch detailed provision status
@@ -137,47 +165,35 @@ export default function BuildProgressPage() {
       const logs = provisionStatus?.logs || []
       const error = provisionStatus?.error
 
-      // Calculate real progress
-      const { step, progress } = calculateProgress(worker.status, logs)
-
-      // Update steps based on actual progress
-      const newSteps = [...BUILD_STEPS]
-      for (let i = 0; i < newSteps.length; i++) {
-        if (i < step) {
-          newSteps[i].status = 'completed'
-          newSteps[i].progress = 100
-        } else if (i === step) {
-          newSteps[i].status = 'in_progress'
-          newSteps[i].progress = progress % 100
-        } else {
-          newSteps[i].status = 'pending'
-          newSteps[i].progress = 0
-        }
-      }
+      // Calculate elapsed time
+      const now = Date.now()
+      const workerStart = startTime || (worker.created_at ? new Date(worker.created_at).getTime() : now)
+      const elapsedSeconds = Math.floor((now - workerStart) / 1000)
 
       if (worker.status === 'error') {
-        newSteps[step].status = 'error'
+        const newSteps = updateStepsUI(buildState.currentStep, 0)
+        newSteps[buildState.currentStep].status = 'error'
         setBuildState(prev => ({ 
           ...prev, 
           status: 'error',
           error: error || 'Provisioning failed',
-          logs,
+          logs: [...prev.logs, ...logs],
           steps: newSteps,
-          currentStep: step,
-          overallProgress: progress
+          elapsedTime: elapsedSeconds
         }))
         return
       }
       
       if (worker.status === 'running') {
-        newSteps.forEach(s => { s.status = 'completed'; s.progress = 100 })
+        const newSteps = updateStepsUI(7, 100)
         setBuildState(prev => ({
           ...prev,
           status: 'running',
           steps: newSteps,
           currentStep: 7,
           overallProgress: 100,
-          logs: [...logs, `${new Date().toLocaleTimeString()}: VPS worker is ready!`],
+          elapsedTime: elapsedSeconds,
+          logs: [...prev.logs, ...logs, `${new Date().toLocaleTimeString()}: VPS worker is ready!`],
           serverInfo: worker.ip_address ? {
             ip: worker.ip_address,
             type: worker.hetzner_server_type || 'cpx12',
@@ -194,14 +210,26 @@ export default function BuildProgressPage() {
         return
       }
       
-      // Provisioning/configuring - show real status
+      // Provisioning/configuring - calculate progress based on elapsed time
+      const { step, stepProgress, overallProgress } = calculateStepFromElapsed(elapsedSeconds)
+      const newSteps = updateStepsUI(step, stepProgress)
+      
+      // Add step change logs
+      const currentLogs = [...buildState.logs, ...logs]
+      const stepNames = STEP_TIMINGS.map(s => s.name)
+      if (step < stepNames.length && step !== buildState.currentStep) {
+        currentLogs.push(`${new Date().toLocaleTimeString()}: ${stepNames[step]}...`)
+      }
+      
       setBuildState(prev => ({
         ...prev,
         status: worker.status as any,
         steps: newSteps,
         currentStep: step,
-        overallProgress: progress,
-        logs,
+        overallProgress,
+        elapsedTime: elapsedSeconds,
+        estimatedRemaining: Math.max(0, 300 - elapsedSeconds),
+        logs: currentLogs,
         serverInfo: worker.ip_address ? {
           ip: worker.ip_address,
           type: worker.hetzner_server_type || 'cpx12',
@@ -213,17 +241,20 @@ export default function BuildProgressPage() {
     } catch (error) {
       console.error('Failed to load status:', error)
     }
-  }, [workerId, calculateProgress, router])
+  }, [workerId, startTime, buildState.currentStep, buildState.logs, router])
 
   // Start provisioning
   const startProvisioning = async () => {
     try {
+      const now = Date.now()
+      setStartTime(now)
       setBuildState(prev => ({
         ...prev,
         status: 'provisioning',
-        logs: [`${new Date().toLocaleTimeString()}: Starting VPS provisioning...`],
+        logs: [`${new Date().toLocaleTimeString()}: Starting VPS provisioning...`, `${new Date().toLocaleTimeString()}: Initialize VPS...`],
         currentStep: 0,
-        overallProgress: 5
+        overallProgress: 0,
+        steps: updateStepsUI(0, 5)
       }))
 
       const response = await fetch('https://shoppdropp-api.onrender.com/api/vps-debug/debug-provision', {
@@ -239,7 +270,6 @@ export default function BuildProgressPage() {
           logs: [
             ...prev.logs, 
             `${new Date().toLocaleTimeString()}: Worker created: ${data.workerId.slice(0, 8)}...`,
-            `${new Date().toLocaleTimeString()}: ${data.message}`
           ]
         }))
       } else {
@@ -255,24 +285,20 @@ export default function BuildProgressPage() {
     }
   }
 
-  // Timer for elapsed time only (not for simulated progress)
+  // Timer for elapsed time and progress updates
   useEffect(() => {
     if (buildState.status === 'idle' || buildState.status === 'running' || buildState.status === 'error') {
       return
     }
 
     const timer = setInterval(() => {
-      setBuildState(prev => ({
-        ...prev,
-        elapsedTime: prev.elapsedTime + 1,
-        estimatedRemaining: Math.max(0, prev.estimatedRemaining - 1)
-      }))
+      loadStatus()
     }, 1000)
 
     return () => clearInterval(timer)
-  }, [buildState.status])
+  }, [buildState.status, loadStatus])
 
-  // Poll for real status updates
+  // Poll for status updates from API
   useEffect(() => {
     if (!isAuthenticated) return
 
@@ -329,7 +355,7 @@ export default function BuildProgressPage() {
             <h1 className="text-3xl font-bold mb-4">Step 1: Provision VPS Worker</h1>
             <p className="text-slate-400 mb-8 max-w-md mx-auto">
               Your store needs a dedicated VPS worker to run automation tasks. 
-              This takes about 3-5 minutes to set up.
+              This takes about 5 minutes to set up.
             </p>
             <Button 
               size="lg"
@@ -360,19 +386,19 @@ export default function BuildProgressPage() {
                         ? 'VPS Worker Ready!' 
                         : buildState.status === 'error'
                         ? 'Provisioning Failed'
-                        : 'Building Your VPS Worker'}
+                        : `Step ${buildState.currentStep + 1}: ${BUILD_STEPS[buildState.currentStep]?.title}`}
                     </h1>
                     <p className="text-slate-400">
                       {buildState.status === 'running'
                         ? 'Your worker is online and ready for automation tasks.'
                         : buildState.status === 'error'
                         ? buildState.error || 'Something went wrong. Check the logs below.'
-                        : 'Setting up your dedicated server. This may take a few minutes.'}
+                        : BUILD_STEPS[buildState.currentStep]?.description}
                     </p>
                   </div>
                   <div className="text-right">
                     <div className="text-4xl font-bold text-violet-400">
-                      {buildState.overallProgress}%
+                      {Math.round(buildState.overallProgress)}%
                     </div>
                     <div className="text-sm text-slate-500">Complete</div>
                   </div>
@@ -380,7 +406,7 @@ export default function BuildProgressPage() {
 
                 <div className="h-3 bg-white/5 rounded-full overflow-hidden mb-8">
                   <div 
-                    className="h-full bg-gradient-to-r from-violet-500 to-pink-500 transition-all duration-500"
+                    className="h-full bg-gradient-to-r from-violet-500 to-pink-500 transition-all duration-1000"
                     style={{ width: `${buildState.overallProgress}%` }}
                   />
                 </div>
@@ -389,10 +415,10 @@ export default function BuildProgressPage() {
                   <div className="p-4 rounded-xl bg-white/5">
                     <div className="flex items-center gap-2 text-slate-400 text-sm mb-1">
                       <Activity className="w-4 h-4" />
-                      Current Task
+                      Current Step
                     </div>
                     <div className="font-medium">
-                      {buildState.steps[buildState.currentStep]?.title || 'Waiting...'}
+                      {buildState.currentStep + 1} of {BUILD_STEPS.length}
                     </div>
                   </div>
                   <div className="p-4 rounded-xl bg-white/5">
@@ -407,7 +433,7 @@ export default function BuildProgressPage() {
                   <div className="p-4 rounded-xl bg-white/5">
                     <div className="flex items-center gap-2 text-slate-400 text-sm mb-1">
                       <Clock className="w-4 h-4" />
-                      Estimated
+                      Remaining
                     </div>
                     <div className="font-mono text-lg">
                       ~{formatTime(buildState.estimatedRemaining)}
@@ -419,7 +445,7 @@ export default function BuildProgressPage() {
               <Card className="bg-[#111118] border-white/10 p-6">
                 <h2 className="text-lg font-semibold mb-6">Build Steps</h2>
                 <div className="space-y-4">
-                  {buildState.steps.map((step) => (
+                  {buildState.steps.map((step, index) => (
                     <div 
                       key={step.id}
                       className={`flex items-start gap-4 p-4 rounded-xl transition-all ${
@@ -451,13 +477,28 @@ export default function BuildProgressPage() {
                           <span className="text-sm font-medium">{step.id}</span>
                         )}
                       </div>
-                      <div className="flex-1">
-                        <h3 className={`font-medium ${
-                          step.status === 'in_progress' ? 'text-violet-300' : ''
-                        }`}>
-                          {step.title}
-                        </h3>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center justify-between mb-1">
+                          <h3 className={`font-medium truncate ${
+                            step.status === 'in_progress' ? 'text-violet-300' : ''
+                          }`}>
+                            {step.title}
+                          </h3>
+                          {step.status === 'in_progress' && (
+                            <span className="text-xs text-violet-400 ml-2">
+                              {step.progress}%
+                            </span>
+                          )}
+                        </div>
                         <p className="text-sm text-slate-400">{step.description}</p>
+                        {step.status === 'in_progress' && (
+                          <div className="mt-2 h-1.5 bg-white/10 rounded-full overflow-hidden">
+                            <div 
+                              className="h-full bg-violet-500 transition-all duration-500"
+                              style={{ width: `${step.progress}%` }}
+                            />
+                          </div>
+                        )}
                       </div>
                     </div>
                   ))}
