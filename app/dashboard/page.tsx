@@ -429,20 +429,35 @@ export default function DashboardPage() {
                   <Cpu className="w-6 h-6 text-violet-400" />
                   <div>
                     <h1 className="text-2xl font-bold text-white">AI Workflow</h1>
-                    <p className="text-sm text-slate-400">Autonomous dropshipping pipeline</p>
+                    <p className="text-sm text-slate-400">
+                      {!store.worker_id 
+                        ? 'Provision a VPS worker to get started'
+                        : 'Ready to start your dropshipping automation'}
+                    </p>
                   </div>
                 </div>
                 <div className="flex items-center gap-3">
-                  <Button 
-                    size="sm" 
-                    className="bg-gradient-to-r from-violet-600 to-pink-600"
-                  >
-                    <Play className="w-4 h-4 mr-2" />
-                    Run Full Workflow
-                  </Button>
-                  <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-green-500/10 border border-green-500/30">
-                    <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
-                    <span className="text-sm text-green-400">Worker Active</span>
+                  {store.worker_id && (
+                    <Button 
+                      size="sm" 
+                      className="bg-gradient-to-r from-violet-600 to-pink-600"
+                      onClick={() => alert('Workflow starting...')}
+                    >
+                      <Play className="w-4 h-4 mr-2" />
+                      Run Full Workflow
+                    </Button>
+                  )}
+                  <div className={`flex items-center gap-2 px-3 py-1.5 rounded-full border ${
+                    store.worker_id 
+                      ? 'bg-green-500/10 border-green-500/30' 
+                      : 'bg-yellow-500/10 border-yellow-500/30'
+                  }`}>
+                    <div className={`w-2 h-2 rounded-full ${
+                      store.worker_id ? 'bg-green-500 animate-pulse' : 'bg-yellow-500'
+                    }`} />
+                    <span className={`text-sm ${store.worker_id ? 'text-green-400' : 'text-yellow-400'}`}>
+                      {store.worker_id ? 'Worker Ready' : 'No Worker'}
+                    </span>
                   </div>
                 </div>
               </div>
@@ -472,8 +487,8 @@ export default function DashboardPage() {
                     description="AI analyzes trending products, competitor data, and market demand"
                     icon={Search}
                     color="blue"
-                    status="completed"
-                    details={["Found 12 trending pet products", "3 high-margin opportunities identified"]}
+                    status="pending"
+                    details={["Will search for trending products in your niche", "Analyze competitor pricing and demand"]}
                   />
 
                   {/* Step 2: CJ Dropshipping Import */}
@@ -483,8 +498,8 @@ export default function DashboardPage() {
                     description="Import winning products from CJ Dropshipping to Shopify"
                     icon={Package}
                     color="orange"
-                    status="in_progress"
-                    details={["Connecting to CJ API", "Syncing inventory..."]}
+                    status="pending"
+                    details={["Sync inventory from CJ Dropshipping", "Auto-import to your Shopify store"]}
                   />
 
                   {/* Step 3: Meta Ads Launch */}
@@ -495,7 +510,7 @@ export default function DashboardPage() {
                     icon={Target}
                     color="pink"
                     status="pending"
-                    details={["Campaign setup ready", "Budget: $50/day allocated"]}
+                    details={["Create ad creatives with AI", "Launch campaigns with your budget"]}
                   />
 
                   {/* Step 4: Measure Results */}
@@ -506,7 +521,7 @@ export default function DashboardPage() {
                     icon={BarChart3}
                     color="violet"
                     status="pending"
-                    details={["Waiting for ad data", "Analytics dashboard ready"]}
+                    details={["Monitor ad performance daily", "Track sales and ROI metrics"]}
                   />
 
                   {/* Step 5: Iterate & Optimize */}
@@ -517,7 +532,7 @@ export default function DashboardPage() {
                     icon={RotateCcw}
                     color="emerald"
                     status="pending"
-                    details={["Auto-optimization enabled", "Will adjust based on results"]}
+                    details={["Auto-adjust based on performance", "Scale winning campaigns"]}
                   />
                 </div>
               </div>
@@ -581,15 +596,15 @@ export default function DashboardPage() {
                   <div className="grid grid-cols-3 gap-4">
                     <div className="bg-white/5 rounded-lg p-4">
                       <p className="text-xs text-slate-400 mb-1">Products</p>
-                      <p className="text-xl font-bold text-white">156</p>
+                      <p className="text-xl font-bold text-white">--</p>
                     </div>
                     <div className="bg-white/5 rounded-lg p-4">
                       <p className="text-xs text-slate-400 mb-1">Today's Sales</p>
-                      <p className="text-xl font-bold text-emerald-400">$1,247</p>
+                      <p className="text-xl font-bold text-emerald-400">--</p>
                     </div>
                     <div className="bg-white/5 rounded-lg p-4">
                       <p className="text-xs text-slate-400 mb-1">AI Tasks</p>
-                      <p className="text-xl font-bold text-violet-400">4</p>
+                      <p className="text-xl font-bold text-violet-400">--</p>
                     </div>
                   </div>
                 </CardContent>
