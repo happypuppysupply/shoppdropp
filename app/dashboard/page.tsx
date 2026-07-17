@@ -242,10 +242,11 @@ Click "Run Full Workflow" or ask me to start any specific task!`
   }
 
   async function rebootVps() {
-    if (!currentStore.worker_id) return
+    const workerId = currentStore.worker_id
+    if (!workerId) return
     
     try {
-      await api.vps.reboot(currentStore.worker_id)
+      await api.vps.reboot(workerId)
       await loadVpsStatus()
     } catch (error) {
       console.error('Failed to reboot VPS:', error)
@@ -253,10 +254,11 @@ Click "Run Full Workflow" or ask me to start any specific task!`
   }
 
   async function stopVps() {
-    if (!currentStore.worker_id) return
+    const workerId = currentStore.worker_id
+    if (!workerId) return
     
     try {
-      await api.vps.stop(currentStore.worker_id)
+      await api.vps.stop(workerId)
       await loadVpsStatus()
     } catch (error) {
       console.error('Failed to stop VPS:', error)
@@ -264,10 +266,11 @@ Click "Run Full Workflow" or ask me to start any specific task!`
   }
 
   async function pauseVps() {
-    if (!currentStore.worker_id) return
+    const workerId = currentStore.worker_id
+    if (!workerId) return
     
     try {
-      await api.vps.pause(currentStore.worker_id)
+      await api.vps.pause(workerId)
       await loadVpsStatus()
     } catch (error) {
       console.error('Failed to pause VPS:', error)
@@ -275,14 +278,15 @@ Click "Run Full Workflow" or ask me to start any specific task!`
   }
 
   async function destroyVps() {
-    if (!currentStore.worker_id) return
+    const workerId = currentStore.worker_id
+    if (!workerId) return
     
     if (!confirm('Are you sure you want to destroy this VPS? This action cannot be undone.')) {
       return
     }
     
     try {
-      await api.vps.destroy(currentStore.worker_id)
+      await api.vps.destroy(workerId)
       setVpsStatus({
         provisioned: false,
         status: 'idle',
