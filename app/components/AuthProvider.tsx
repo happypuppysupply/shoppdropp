@@ -137,33 +137,14 @@ export function AuthProvider({ children }: AuthProviderProps) {
   );
 
   const signInWithGoogle = useCallback(async () => {
-    if (!supabaseRef.current) {
-      console.error("Supabase not initialized");
-      return;
-    }
+    if (!supabaseRef.current) return;
     
-    try {
-      const { data, error } = await supabaseRef.current.auth.signInWithOAuth({
-        provider: "google",
-        options: {
-          redirectTo: `${window.location.origin}/auth/callback`,
-          queryParams: {
-            access_type: 'offline',
-            prompt: 'consent',
-          },
-        },
-      });
-      
-      if (error) {
-        console.error("Google OAuth error:", error);
-        throw error;
-      }
-      
-      console.log("Google OAuth initiated:", data);
-    } catch (err) {
-      console.error("Failed to sign in with Google:", err);
-      throw err;
-    }
+    await supabaseRef.current.auth.signInWithOAuth({
+      provider: "google",
+      options: {
+        redirectTo: `${window.location.origin}/auth/callback`,
+      },
+    });
   }, []);
 
   const signOut = useCallback(async () => {
