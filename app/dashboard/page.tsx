@@ -131,6 +131,19 @@ Click "Run Full Workflow" or ask me to start any specific task!`
     }
   }, [isLoading, isAuthenticated, router])
 
+  // Use real store ID that exists in database - this is the actual store
+  const demoStore: StoreData = {
+    id: '000fdf9a-74b4-4069-b441-2a000b4f3b08',  // Real store ID from DB
+    name: 'Happy Puppy Supply',
+    url: 'https://happypuppysupply.com',
+    status: 'active',
+    worker_id: null,
+    created_at: new Date().toISOString()
+  }
+  
+  // Get the actual store - use real store from API if available, otherwise use demo with real ID
+  const store = stores.length > 0 ? stores[0] : (loading ? null : demoStore)
+
   // Auto-poll VPS status when provisioning
   useEffect(() => {
     if (!store?.worker_id) return
@@ -334,19 +347,6 @@ Click "Run Full Workflow" or ask me to start any specific task!`
   }
 
   // Demo store for initial render only - will be replaced by real store data
-  // Use real store ID that exists in database - this is the actual store
-  const demoStore: StoreData = {
-    id: '000fdf9a-74b4-4069-b441-2a000b4f3b08',  // Real store ID from DB
-    name: 'Happy Puppy Supply',
-    url: 'https://happypuppysupply.com',
-    status: 'active',
-    worker_id: null,
-    created_at: new Date().toISOString()
-  }
-  
-  // Get the actual store - use real store from API if available, otherwise use demo with real ID
-  const store = stores.length > 0 ? stores[0] : (loading ? null : demoStore)
-  
   // Determine if we have a real store (not demo)
   const hasRealStore = stores.length > 0 || store?.id === '000fdf9a-74b4-4069-b441-2a000b4f3b08'
   const realStoreWorkerId = store?.worker_id || null
