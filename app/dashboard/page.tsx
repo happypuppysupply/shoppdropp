@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button'
 import { 
   Store, Plus, ExternalLink, Settings, Sparkles, LogOut, User, 
   Bot, Send, Search, Database, DollarSign, Megaphone,
-  ChevronLeft, LayoutGrid, Cpu, Cog, Link2, Play, RotateCcw, TrendingUp, Package, Target, BarChart3, ArrowRight
+  ChevronLeft, LayoutGrid, Cpu, Cog, Link2, Play, RotateCcw, TrendingUp, Package, Target, BarChart3, ArrowRight, Loader2
 } from 'lucide-react'
 import { useAuth } from '../hooks/useAuth'
 import { api } from '@/lib/api'
