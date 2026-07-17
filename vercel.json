@@ -1,5 +1,6 @@
 {
   "version": 2,
+  "name": "shoppdropp-blueprint",
   "headers": [
     {
       "source": "/(.*)",
@@ -18,12 +19,6 @@
           "value": "no-store, max-age=0"
         }
       ]
-    }
-  ],
-  "rewrites": [
-    {
-      "source": "/dashboard",
-      "destination": "/dashboard?v=2"
     }
   ]
 }
