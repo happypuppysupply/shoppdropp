@@ -42,11 +42,36 @@ export default function DashboardPage() {
   const [selectedStore, setSelectedStore] = useState<StoreData | null>(null)
   const [activeTab, setActiveTab] = useState<'overview' | 'ai-agent' | 'integrations' | 'settings'>('ai-agent')
 
-  // Handle ?tab= query parameter
+  // Handle ?tab= query parameter and from=provision
   useEffect(() => {
     const tab = searchParams.get('tab')
+    const fromProvision = searchParams.get('from') === 'provision'
+    const workerIdFromUrl = searchParams.get('workerId')
+    
     if (tab === 'ai-agent' || tab === 'overview' || tab === 'integrations' || tab === 'settings') {
       setActiveTab(tab)
+    }
+    
+    // If coming from provision with a worker ID, show welcome message
+    if (fromProvision && workerIdFromUrl) {
+      // Add AI welcome message after a short delay
+      setTimeout(() => {
+        setChatMessages(prev => [...prev, {
+          id: Date.now().toString(),
+          role: 'assistant',
+          content: `🎉 **VPS Worker Provisioned Successfully!**
+
+Your VPS worker (${workerIdFromUrl.slice(0, 8)}...) is now running and ready for automation tasks.
+
+**What I can help you with now:**
+• Run product research to find winning products
+• Import products from CJ Dropshipping
+• Create and manage Meta ad campaigns
+• Analyze store performance and optimize
+
+Click "Run Full Workflow" or ask me to start any specific task!`
+        }])
+      }, 1000)
     }
   }, [searchParams])
   
@@ -108,13 +133,12 @@ export default function DashboardPage() {
 
   // Auto-poll VPS status when provisioning
   useEffect(() => {
-    const currentStore = stores[0] || demoStore
-    if (!currentStore?.worker_id) return
+    if (!store?.worker_id) return
     if (vpsStatus.status === 'provisioning' || vpsStatus.status === 'configuring') {
       const interval = setInterval(loadVpsStatus, 5000) // Poll every 5 seconds
       return () => clearInterval(interval)
     }
-  }, [vpsStatus.status, stores])
+  }, [vpsStatus.status, store?.worker_id])
 
   useEffect(() => {
     if (isAuthenticated) {
@@ -128,9 +152,11 @@ export default function DashboardPage() {
 
   useEffect(() => {
     if (isAuthenticated && activeTab === 'ai-agent') {
-      loadVpsStatus()
+      // If workerId is in URL (from provision redirect), use it
+      const workerIdFromUrl = searchParams.get('workerId')
+      loadVpsStatus(workerIdFromUrl || undefined)
     }
-  }, [isAuthenticated, activeTab])
+  }, [isAuthenticated, activeTab, searchParams])
 
   async function loadStores() {
     try {
@@ -143,12 +169,13 @@ export default function DashboardPage() {
     }
   }
 
-  async function loadVpsStatus() {
-    if (!store.worker_id) return
+  async function loadVpsStatus(targetWorkerId?: string) {
+    const workerIdToUse = targetWorkerId || store?.worker_id
+    if (!workerIdToUse) return
     
     try {
       setVpsStatus(prev => ({ ...prev, loading: true }))
-      const data = await api.vps.getStatus(store.worker_id)
+      const data = await api.vps.getStatus(workerIdToUse)
       setVpsStatus({
         provisioned: data.provisioned,
         status: data.status,
@@ -300,6 +327,7 @@ export default function DashboardPage() {
     }
   }
 
+  // Demo store for initial render only - will be replaced by real store data
   const demoStore: StoreData = {
     id: 'demo',
     name: 'Happy Puppy Supply Store',
@@ -308,6 +336,9 @@ export default function DashboardPage() {
     worker_id: null,
     created_at: new Date().toISOString()
   }
+  
+  // Get the actual store (prefer real store over demo)
+  const store = stores.length > 0 ? stores[0] : (loading ? null : demoStore)
 
   if (isLoading) {
     return (
@@ -324,7 +355,17 @@ export default function DashboardPage() {
     return null
   }
 
-  const store = stores[0] || demoStore
+  // store is already defined above
+  if (!store) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-[#050508]">
+        <div className="flex items-center gap-3 text-white/50">
+          <div className="w-6 h-6 border-2 border-violet-500 border-t-transparent rounded-full animate-spin" />
+          <span>Loading store...</span>
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div className="flex h-screen bg-[#050508]">

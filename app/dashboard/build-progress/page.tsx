@@ -193,7 +193,7 @@ export default function BuildProgressPage() {
           currentStep: 7,
           overallProgress: 100,
           elapsedTime: elapsedSeconds,
-          logs: [...prev.logs, ...logs, `${new Date().toLocaleTimeString()}: VPS worker is ready!`],
+          logs: [...prev.logs, ...logs, `${new Date().toLocaleTimeString()}: VPS worker is ready!`, `${new Date().toLocaleTimeString()}: Server IP: ${worker.ip_address}`],
           serverInfo: worker.ip_address ? {
             ip: worker.ip_address,
             type: worker.hetzner_server_type || 'cpx12',
@@ -203,10 +203,13 @@ export default function BuildProgressPage() {
           } : prev.serverInfo
         }))
         
-        // Redirect to store configuration after success
+        // Send AI welcome message via API
+        sendAIWelcomeMessage(worker)
+        
+        // Redirect to dashboard AI tab after success
         setTimeout(() => {
-          router.push('/dashboard/store-config')
-        }, 3000)
+          router.push(`/dashboard?tab=ai-agent&from=provision&workerId=${worker.id}`)
+        }, 5000)
         return
       }
       
@@ -244,6 +247,23 @@ export default function BuildProgressPage() {
   }, [workerId, startTime, buildState.currentStep, buildState.logs, router])
 
   // Start provisioning
+  // Send AI welcome message when VPS is ready
+  const sendAIWelcomeMessage = async (worker: any) => {
+    try {
+      await fetch('https://shoppdropp-api.onrender.com/api/ai/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          message: `VPS Worker ${worker.id.slice(0, 8)} is now running at ${worker.ip_address}. Send a welcome message to the user.`,
+          system_prompt: "You are ShoppDropp AI. A VPS worker was just provisioned successfully. Send a brief, excited welcome message mentioning that the VPS is ready, include the IP address, and say you're ready to help with automation tasks.",
+          skip_response: true
+        })
+      })
+    } catch (e) {
+      console.log('Failed to send AI welcome:', e)
+    }
+  }
+
   const startProvisioning = async () => {
     try {
       const now = Date.now()
