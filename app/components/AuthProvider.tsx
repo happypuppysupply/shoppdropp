@@ -10,7 +10,6 @@ import {
 } from "react";
 import type { User, AuthError, Session, SupabaseClient } from "@supabase/supabase-js";
 import { createBrowserClient } from "@supabase/ssr";
-import { api } from "@/lib/api";
 
 interface AuthContextType {
   user: User | null;
@@ -60,14 +59,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
     // Check active sessions
     const getUser = async () => {
-      const { data: { user }, error } = await supabaseRef.current!.auth.getUser();
-      if (user && !error) {
-        // Get session and save token
-        const { data: { session } } = await supabaseRef.current!.auth.getSession();
-        if (session?.access_token) {
-          api.setToken(session.access_token);
-        }
-      }
+      const { data: { user } } = await supabaseRef.current!.auth.getUser();
       setUser(user);
       setIsLoading(false);
     };
@@ -78,11 +70,6 @@ export function AuthProvider({ children }: AuthProviderProps) {
     const { data: listener } = supabaseRef.current.auth.onAuthStateChange(
       async (_event: string, session: Session | null) => {
         setUser(session?.user ?? null);
-        if (session?.access_token) {
-          api.setToken(session.access_token);
-        } else {
-          api.setToken(null);
-        }
         setIsLoading(false);
       }
     );
@@ -149,9 +136,6 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
   const signOut = useCallback(async () => {
     if (!supabaseRef.current) return;
-    
-    // Clear our custom token too
-    localStorage.removeItem('token');
     
     await supabaseRef.current.auth.signOut();
   }, []);
