@@ -270,6 +270,12 @@ export default function BuildProgressPage() {
             disk: 40
           })
         }
+        
+        // 🎉 Provisioning complete! Redirect to AI Agent page after a short delay
+        setTimeout(() => {
+          router.push('/dashboard?tab=ai-agent')
+        }, 2000) // 2 second delay so they see the success state
+        
         return
       }
       

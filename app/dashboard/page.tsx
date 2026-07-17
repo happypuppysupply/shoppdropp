@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState, useRef } from 'react'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { 
@@ -34,12 +34,21 @@ interface ChatMessage {
 
 export default function DashboardPage() {
   const router = useRouter()
+  const searchParams = useSearchParams()
   const { user, isAuthenticated, isLoading, signOut } = useAuth()
   const [stores, setStores] = useState<StoreData[]>([])
   const [loading, setLoading] = useState(true)
   const [showAddModal, setShowAddModal] = useState(false)
   const [selectedStore, setSelectedStore] = useState<StoreData | null>(null)
   const [activeTab, setActiveTab] = useState<'overview' | 'ai-agent' | 'integrations' | 'settings'>('ai-agent')
+
+  // Handle ?tab= query parameter
+  useEffect(() => {
+    const tab = searchParams.get('tab')
+    if (tab === 'ai-agent' || tab === 'overview' || tab === 'integrations' || tab === 'settings') {
+      setActiveTab(tab)
+    }
+  }, [searchParams])
   
   // Integrations state
   const [integrations, setIntegrations] = useState({
