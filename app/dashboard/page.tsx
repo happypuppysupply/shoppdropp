@@ -208,6 +208,7 @@ Click "Run Full Workflow" or ask me to start any specific task!`
   }
 
   async function provisionVps() {
+    if (!store) return
     const workerId = store.worker_id
     if (!workerId) return
     
@@ -241,7 +242,7 @@ Click "Run Full Workflow" or ask me to start any specific task!`
   }
 
   async function rebootVps() {
-    if (!store.worker_id) return
+    if (!store?.worker_id) return
     
     try {
       await api.vps.reboot(store.worker_id)
@@ -252,7 +253,7 @@ Click "Run Full Workflow" or ask me to start any specific task!`
   }
 
   async function stopVps() {
-    if (!store.worker_id) return
+    if (!store?.worker_id) return
     
     try {
       await api.vps.stop(store.worker_id)
@@ -263,7 +264,7 @@ Click "Run Full Workflow" or ask me to start any specific task!`
   }
 
   async function pauseVps() {
-    if (!store.worker_id) return
+    if (!store?.worker_id) return
     
     try {
       await api.vps.pause(store.worker_id)
@@ -274,7 +275,7 @@ Click "Run Full Workflow" or ask me to start any specific task!`
   }
 
   async function destroyVps() {
-    if (!store.worker_id) return
+    if (!store?.worker_id) return
     
     if (!confirm('Are you sure you want to destroy this VPS? This action cannot be undone.')) {
       return
