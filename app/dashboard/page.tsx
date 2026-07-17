@@ -384,7 +384,10 @@ Click "Run Full Workflow" or ask me to start any specific task!`
       <aside className="w-64 flex-shrink-0 bg-[#0a0a0f] border-r border-white/5 flex flex-col">
         {/* Back to Stores */}
         <div className="p-4 border-b border-white/5">
-          <button className="flex items-center gap-2 text-sm text-slate-400 hover:text-white transition-colors">
+          <button 
+            onClick={() => router.push('/stores')}
+            className="flex items-center gap-2 text-sm text-slate-400 hover:text-white transition-colors"
+          >
             <ChevronLeft className="w-4 h-4" />
             Back to Stores
           </button>

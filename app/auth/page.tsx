@@ -10,10 +10,10 @@ export default function AuthPage() {
   const { isAuthenticated, isLoading } = useAuth()
   const [modalOpen, setModalOpen] = useState(true)
 
-  // If already authenticated, redirect to dashboard
+  // If already authenticated, redirect to stores grid
   useEffect(() => {
     if (!isLoading && isAuthenticated) {
-      router.push('/dashboard')
+      router.push('/stores')
     }
   }, [isLoading, isAuthenticated, router])
 
@@ -41,7 +41,7 @@ export default function AuthPage() {
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-[#0a0a0f] via-[#111118] to-[#0a0a0f]">
         <div className="flex items-center gap-3 text-white/50">
           <div className="w-6 h-6 border-2 border-violet-500 border-t-transparent rounded-full animate-spin" />
-          <span>Redirecting to dashboard...</span>
+          <span>Redirecting to stores...</span>
         </div>
       </div>
     )
