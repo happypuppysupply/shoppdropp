@@ -196,6 +196,47 @@ export default function DashboardPage() {
     }
   }
 
+  async function stopVps() {
+    if (!store.worker_id) return
+    
+    try {
+      await api.vps.stop(store.worker_id)
+      await loadVpsStatus()
+    } catch (error) {
+      console.error('Failed to stop VPS:', error)
+    }
+  }
+
+  async function pauseVps() {
+    if (!store.worker_id) return
+    
+    try {
+      await api.vps.pause(store.worker_id)
+      await loadVpsStatus()
+    } catch (error) {
+      console.error('Failed to pause VPS:', error)
+    }
+  }
+
+  async function destroyVps() {
+    if (!store.worker_id) return
+    
+    if (!confirm('Are you sure you want to destroy this VPS? This action cannot be undone.')) {
+      return
+    }
+    
+    try {
+      await api.vps.destroy(store.worker_id)
+      setVpsStatus({
+        provisioned: false,
+        status: 'idle',
+        loading: false,
+      })
+    } catch (error) {
+      console.error('Failed to destroy VPS:', error)
+    }
+  }
+
   const handleSignOut = async () => {
     await signOut()
     router.push('/')
@@ -404,6 +445,9 @@ export default function DashboardPage() {
                 onProvision={provisionVps}
                 onReboot={rebootVps}
                 onRefresh={loadVpsStatus}
+                onStop={stopVps}
+                onPause={pauseVps}
+                onDestroy={destroyVps}
               />
 
               {/* AI Workflow Pipeline */}
@@ -861,9 +905,12 @@ interface VPSCardProps {
   onProvision: () => void
   onReboot: () => void
   onRefresh: () => void
+  onStop?: () => void
+  onPause?: () => void
+  onDestroy?: () => void
 }
 
-function VPSCard({ workerId, status, onProvision, onReboot, onRefresh }: VPSCardProps) {
+function VPSCard({ workerId, status, onProvision, onReboot, onRefresh, onStop, onPause, onDestroy }: VPSCardProps) {
   const router = useRouter()
   
   if (!workerId) {
@@ -930,6 +977,7 @@ function VPSCard({ workerId, status, onProvision, onReboot, onRefresh }: VPSCard
   }
 
   const server = status.server
+  const isRunning = status.status === 'running'
   
   return (
     <div className="p-6 rounded-xl bg-[#111118] border border-white/10">
@@ -958,12 +1006,36 @@ function VPSCard({ workerId, status, onProvision, onReboot, onRefresh }: VPSCard
             <RotateCcw className="w-3.5 h-3.5 mr-1" />
             Refresh
           </Button>
+          {isRunning && onStop && (
+            <Button variant="outline" size="sm" className="border-yellow-500/30 text-yellow-400 hover:bg-yellow-500/10 h-8" onClick={onStop}>
+              <svg className="w-3.5 h-3.5 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <rect x="6" y="6" width="12" height="12" rx="2" strokeWidth={2} />
+              </svg>
+              Stop
+            </Button>
+          )}
+          {isRunning && onPause && (
+            <Button variant="outline" size="sm" className="border-blue-500/30 text-blue-400 hover:bg-blue-500/10 h-8" onClick={onPause}>
+              <svg className="w-3.5 h-3.5 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 9v6m4-6v6m7-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              Pause
+            </Button>
+          )}
           <Button variant="outline" size="sm" className="border-white/20 text-white hover:bg-white/10 h-8" onClick={onReboot}>
             <svg className="w-3.5 h-3.5 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
             </svg>
             Restart
           </Button>
+          {onDestroy && (
+            <Button variant="outline" size="sm" className="border-red-500/30 text-red-400 hover:bg-red-500/10 h-8" onClick={onDestroy}>
+              <svg className="w-3.5 h-3.5 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+              </svg>
+              Destroy
+            </Button>
+          )}
         </div>
       </div>
       

@@ -141,7 +141,7 @@ export function OpenWebNinjaModal({ onClose, onConfigured }: OpenWebNinjaModalPr
       
       // Update configured status based on results
       const newConfigured: Record<string, boolean> = {}
-      for (const [service, res] of Object.entries(result.results)) {
+      for (const [service, res] of Object.entries(result.results as Record<string, { success: boolean }>)) {
         newConfigured[service] = res.success
       }
       setConfiguredServices(prev => ({ ...prev, ...newConfigured }))
