@@ -305,7 +305,7 @@ export default function DashboardPage() {
     name: 'Happy Puppy Supply Store',
     url: 'yourname.myshopify.com',
     status: 'active',
-    worker_id: 'a4841dfd-4ab3-40bc-aaad-4e3b8e941363',
+    worker_id: null,
     created_at: new Date().toISOString()
   }
 
