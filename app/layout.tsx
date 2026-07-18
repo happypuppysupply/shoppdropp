@@ -1,22 +1,21 @@
 import type { Metadata } from "next";
-import { Geist } from "next/font/google";
+import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
-import { AuthProvider } from "./components/AuthProvider";
+import { AuthProvider } from "@/components/auth/AuthProvider";
 
-const geist = Geist({
+const geistSans = Geist({
   variable: "--font-geist-sans",
   subsets: ["latin"],
 });
 
+const geistMono = Geist_Mono({
+  variable: "--font-geist-mono",
+  subsets: ["latin"],
+});
+
 export const metadata: Metadata = {
-  title: "ShoppDropp — AI Autonomous Store Management",
-  description: "Connect your Shopify store and let our AI agent handle catalog management, pricing optimization, inventory sync, and marketing — 24/7 autonomous management for dropshippers and agencies.",
-  keywords: "shopify, dropshipping, ai agent, autonomous, catalog management, inventory sync, dropshipper tools",
-  openGraph: {
-    title: "ShoppDropp — AI Autonomous Store Management",
-    description: "Your Shopify store, managed by AI. 24/7 autonomous catalog optimization.",
-    type: "website",
-  },
+  title: "ShoppDropp - Autonomous Dropshipping Platform",
+  description: "AI-powered dropshipping platform with automated store creation, ad management, and product sourcing.",
 };
 
 export default function RootLayout({
@@ -25,8 +24,10 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className={`${geist.variable} antialiased dark`}>
-      <body className="min-h-full bg-[#0a0a0f] text-white overflow-x-hidden">
+    <html lang="en">
+      <body
+        className={`${geistSans.variable} ${geistMono.variable} antialiased bg-[#050508] text-white`}
+      >
         <AuthProvider>
           {children}
         </AuthProvider>
@@ -34,5 +35,3 @@ export default function RootLayout({
     </html>
   );
 }
-// Deploy: Sat Jul 18 02:55:44 +07 2026
-// Build: 1784318242

@@ -3,7 +3,7 @@
 import { useEffect, useState, Suspense, useRef } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { motion } from "framer-motion";
-import { createBrowserClient } from "@supabase/ssr";
+import { getSupabaseClient } from "@/lib/supabase-client";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { Loader2, CheckCircle2, XCircle } from "lucide-react";
 
@@ -30,24 +30,18 @@ function AuthCallbackContent() {
   const supabaseRef = useRef<SupabaseClient | null>(null);
 
   useEffect(() => {
-    // Initialize Supabase client in browser only
-    const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
-    const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-    
-    if (!url || !key) {
+    // Initialize Supabase client with shared cookie-based config
+    try {
+      supabaseRef.current = getSupabaseClient();
+    } catch (err) {
       setStatus("error");
       setMessage("Configuration error: Missing Supabase credentials");
       setTimeout(() => router.push("/"), 3000);
       return;
     }
-    
-    supabaseRef.current = createBrowserClient(url, key);
 
     const handleAuthCallback = async () => {
       if (!supabaseRef.current) return;
-      
-      // Debug: log all search params
-      console.log("Auth callback params:", Object.fromEntries(searchParams.entries()));
       
       // Check for error in URL
       const error = searchParams.get("error");
@@ -60,46 +54,7 @@ function AuthCallbackContent() {
         return;
       }
 
-      // Wait a moment for Supabase to process any pending auth state (magic links)
-      await new Promise(resolve => setTimeout(resolve, 500));
-
-      // First check if user is already logged in (magic links set this automatically)
-      const { data: { user }, error: userError } = await supabaseRef.current.auth.getUser();
-      
-      if (user) {
-        setStatus("success");
-        setMessage("Signed in! Redirecting to dashboard...");
-        setTimeout(() => router.push("/dashboard"), 1000);
-        return;
-      }
-
-      // Check for auth code (Supabase sends this for email confirmations and OAuth)
-      const code = searchParams.get("code");
-      
-      if (code) {
-        try {
-          const { error: sessionError } = await supabaseRef.current.auth.exchangeCodeForSession(code);
-          
-          if (sessionError) {
-            setStatus("error");
-            setMessage(sessionError.message);
-            setTimeout(() => router.push("/"), 3000);
-            return;
-          }
-          
-          setStatus("success");
-          setMessage("Email confirmed! Redirecting to dashboard...");
-          setTimeout(() => router.push("/dashboard"), 1500);
-          return;
-        } catch (err) {
-          setStatus("error");
-          setMessage("Failed to complete sign in");
-          setTimeout(() => router.push("/"), 3000);
-          return;
-        }
-      }
-
-      // Check for confirmation token (legacy email confirmation)
+      // Check for confirmation token (email confirmation)
       const token = searchParams.get("token");
       const type = searchParams.get("type");
       
@@ -130,8 +85,43 @@ function AuthCallbackContent() {
         }
       }
 
-      // No auth data, redirect home
-      router.push("/");
+      // Check for auth code (OAuth or magic link)
+      const code = searchParams.get("code");
+      
+      if (code) {
+        try {
+          const { error: sessionError } = await supabaseRef.current.auth.exchangeCodeForSession(code);
+          
+          if (sessionError) {
+            setStatus("error");
+            setMessage(sessionError.message);
+            setTimeout(() => router.push("/"), 3000);
+            return;
+          }
+          
+          setStatus("success");
+          setMessage("Signed in! Redirecting to dashboard...");
+          setTimeout(() => router.push("/dashboard"), 1500);
+          return;
+        } catch (err) {
+          setStatus("error");
+          setMessage("Failed to complete sign in");
+          setTimeout(() => router.push("/"), 3000);
+          return;
+        }
+      }
+
+      // If no token or code, just check if user is already logged in
+      const { data: { user } } = await supabaseRef.current.auth.getUser();
+      
+      if (user) {
+        setStatus("success");
+        setMessage("Already signed in! Redirecting...");
+        setTimeout(() => router.push("/dashboard"), 1000);
+      } else {
+        // No auth data, redirect home
+        router.push("/");
+      }
     };
 
     handleAuthCallback();

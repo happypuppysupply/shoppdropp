@@ -22,13 +22,13 @@ import {
   RefreshCw,
   Lock
 } from "lucide-react";
-import { ShoppDroppLogo, ShoppDroppText } from "./components/Logo";
-import { WaitlistForm } from "./components/WaitlistForm";
-import { ExpandableSection } from "./components/ExpandableSection";
-import { ThemeToggle } from "./components/ThemeToggle";
-import { AgentVisualization } from "./components/AgentVisualization";
-import { Preloader } from "./components/Preloader";
-import { AuthModal } from "./components/AuthModal";
+import { ShoppDroppLogo, ShoppDroppText } from "@/components/Logo";
+import { WaitlistForm } from "@/components/WaitlistForm";
+import { ExpandableSection } from "@/components/ExpandableSection";
+import { ThemeToggle } from "@/components/ThemeToggle";
+import { AgentVisualization } from "@/components/AgentVisualization";
+import { Preloader } from "@/components/Preloader";
+import { AuthModal } from "@/components/AuthModal";
 
 const features = [
   {
