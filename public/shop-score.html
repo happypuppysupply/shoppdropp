@@ -1,0 +1,757 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Shop Score - AI Store Analysis</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #0a0a0f;
+            color: #fff;
+            min-height: 100vh;
+            line-height: 1.6;
+        }
+        
+        .container { max-width: 1200px; margin: 0 auto; padding: 40px 20px; }
+        
+        .header {
+            text-align: center;
+            margin-bottom: 40px;
+        }
+        .header h1 {
+            font-size: 3rem;
+            background: linear-gradient(135deg, #8b5cf6 0%, #ec4899 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 10px;
+        }
+        .header p { color: #9ca3af; font-size: 1.1rem; }
+        
+        /* Mode Switcher */
+        .mode-switcher {
+            display: flex;
+            justify-content: center;
+            gap: 0;
+            margin-bottom: 40px;
+            background: rgba(255,255,255,0.05);
+            border-radius: 50px;
+            padding: 5px;
+            max-width: 500px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+        .mode-btn {
+            flex: 1;
+            padding: 12px 30px;
+            border: none;
+            background: transparent;
+            color: #9ca3af;
+            font-size: 1rem;
+            border-radius: 50px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        .mode-btn.active {
+            background: linear-gradient(135deg, #8b5cf6 0%, #ec4899 100%);
+            color: #fff;
+        }
+        .mode-btn:hover:not(.active) { color: #fff; }
+        
+        /* Input Section */
+        .input-section {
+            background: rgba(139, 92, 246, 0.1);
+            border: 1px solid rgba(139, 92, 246, 0.3);
+            border-radius: 24px;
+            padding: 40px;
+            margin-bottom: 40px;
+        }
+        .input-title {
+            text-align: center;
+            font-size: 1.5rem;
+            margin-bottom: 30px;
+        }
+        .input-title span { color: #ec4899; }
+        
+        .input-group { margin-bottom: 25px; }
+        .input-group label {
+            display: block;
+            color: #9ca3af;
+            margin-bottom: 10px;
+            font-size: 0.95rem;
+        }
+        .input-group input {
+            width: 100%;
+            padding: 18px 24px;
+            background: rgba(0,0,0,0.3);
+            border: 2px solid rgba(255,255,255,0.1);
+            border-radius: 12px;
+            color: #fff;
+            font-size: 1.1rem;
+        }
+        .input-group input:focus {
+            outline: none;
+            border-color: #8b5cf6;
+        }
+        
+        .scan-btn {
+            width: 100%;
+            padding: 20px;
+            background: linear-gradient(135deg, #8b5cf6 0%, #ec4899 100%);
+            color: #fff;
+            border: none;
+            border-radius: 12px;
+            font-size: 1.2rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        .scan-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 15px 40px rgba(139, 92, 246, 0.4);
+        }
+        .scan-btn:disabled { opacity: 0.6; cursor: not-allowed; }
+        
+        /* Loading */
+        .loading {
+            display: none;
+            text-align: center;
+            padding: 80px 20px;
+        }
+        .loading.active { display: block; }
+        .spinner {
+            width: 70px;
+            height: 70px;
+            border: 4px solid rgba(139, 92, 246, 0.2);
+            border-top-color: #8b5cf6;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 25px;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        
+        /* Results - YOUR STORE */
+        .results-your-store {
+            display: none;
+        }
+        .results-your-store.active { display: block; }
+        
+        .score-card {
+            background: linear-gradient(135deg, rgba(139, 92, 246, 0.15) 0%, rgba(236, 72, 153, 0.15) 100%);
+            border: 1px solid rgba(139, 92, 246, 0.3);
+            border-radius: 24px;
+            padding: 50px;
+            margin-bottom: 30px;
+            text-align: center;
+        }
+        .score-value {
+            font-size: 8rem;
+            font-weight: 800;
+            background: linear-gradient(135deg, #8b5cf6 0%, #ec4899 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            line-height: 1;
+        }
+        .score-grade {
+            font-size: 3rem;
+            color: #ec4899;
+            font-weight: 700;
+            margin: 10px 0;
+        }
+        .score-label {
+            color: #9ca3af;
+            font-size: 1.1rem;
+            margin-bottom: 30px;
+        }
+        .score-badges {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            flex-wrap: wrap;
+        }
+        .score-badge {
+            background: rgba(255,255,255,0.1);
+            padding: 12px 24px;
+            border-radius: 50px;
+            font-size: 0.95rem;
+        }
+        
+        /* Category Scores */
+        .categories-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+        .category-card {
+            background: rgba(255,255,255,0.03);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 16px;
+            padding: 25px;
+        }
+        .category-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+        .category-name { font-size: 1.1rem; font-weight: 600; }
+        .category-score { font-size: 1.8rem; font-weight: 700; color: #8b5cf6; }
+        .category-bar {
+            height: 10px;
+            background: rgba(255,255,255,0.1);
+            border-radius: 5px;
+            overflow: hidden;
+            margin-bottom: 15px;
+        }
+        .category-bar-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #8b5cf6 0%, #ec4899 100%);
+            border-radius: 5px;
+            transition: width 1s ease;
+        }
+        .category-issues {
+            color: #9ca3af;
+            font-size: 0.9rem;
+        }
+        .category-issues li {
+            margin: 5px 0;
+            list-style: none;
+        }
+        .category-issues li:before {
+            content: "⚠️ ";
+        }
+        
+        /* Fix List */
+        .fix-section {
+            background: rgba(255,255,255,0.03);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 16px;
+            padding: 30px;
+            margin-bottom: 30px;
+        }
+        .fix-section h3 {
+            font-size: 1.4rem;
+            margin-bottom: 25px;
+            color: #22c55e;
+        }
+        .fix-item {
+            display: flex;
+            gap: 20px;
+            padding: 20px;
+            background: rgba(0,0,0,0.2);
+            border-radius: 12px;
+            margin-bottom: 15px;
+        }
+        .fix-priority {
+            padding: 6px 14px;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+        .fix-priority.critical { background: #ef4444; }
+        .fix-priority.high { background: #f59e0b; }
+        .fix-priority.medium { background: #3b82f6; }
+        .fix-content h4 { margin-bottom: 5px; }
+        .fix-content p { color: #9ca3af; font-size: 0.95rem; }
+        .fix-impact { margin-left: auto; text-align: right; }
+        .fix-impact .lift { color: #22c55e; font-weight: 600; }
+        
+        /* Results - COMPETITOR */
+        .results-competitor {
+            display: none;
+        }
+        .results-competitor.active { display: block; }
+        
+        .competitor-header {
+            background: rgba(255,255,255,0.03);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 16px;
+            padding: 30px;
+            margin-bottom: 30px;
+            text-align: center;
+        }
+        .competitor-header h2 {
+            font-size: 2rem;
+            margin-bottom: 10px;
+        }
+        .competitor-header p { color: #9ca3af; }
+        
+        .opportunity-card {
+            background: linear-gradient(135deg, rgba(34, 197, 94, 0.1) 0%, rgba(34, 197, 94, 0.05) 100%);
+            border: 1px solid rgba(34, 197, 94, 0.3);
+            border-radius: 16px;
+            padding: 30px;
+            margin-bottom: 30px;
+        }
+        .opportunity-card h3 {
+            color: #22c55e;
+            margin-bottom: 20px;
+        }
+        .opportunity-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+        }
+        .opportunity-item {
+            background: rgba(0,0,0,0.2);
+            padding: 20px;
+            border-radius: 12px;
+        }
+        .opportunity-item .value {
+            font-size: 1.8rem;
+            font-weight: 700;
+            color: #22c55e;
+            margin-bottom: 5px;
+        }
+        .opportunity-item .label { color: #9ca3af; }
+        
+        .strategy-section {
+            background: rgba(255,255,255,0.03);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 16px;
+            padding: 30px;
+            margin-bottom: 30px;
+        }
+        .strategy-section h3 {
+            font-size: 1.4rem;
+            margin-bottom: 25px;
+        }
+        .strategy-item {
+            display: flex;
+            gap: 20px;
+            padding: 20px;
+            border-bottom: 1px solid rgba(255,255,255,0.05);
+        }
+        .strategy-item:last-child { border-bottom: none; }
+        .strategy-num {
+            width: 40px;
+            height: 40px;
+            background: linear-gradient(135deg, #8b5cf6 0%, #ec4899 100%);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+        }
+        .strategy-content h4 { margin-bottom: 5px; }
+        .strategy-content p { color: #9ca3af; }
+        
+        .cta-section {
+            background: linear-gradient(135deg, rgba(139, 92, 246, 0.2) 0%, rgba(236, 72, 153, 0.2) 100%);
+            border: 2px solid rgba(139, 92, 246, 0.4);
+            border-radius: 20px;
+            padding: 40px;
+            text-align: center;
+        }
+        .cta-section h3 { font-size: 1.6rem; margin-bottom: 15px; }
+        .cta-section p { color: #9ca3af; margin-bottom: 25px; }
+        .cta-btn {
+            padding: 18px 50px;
+            background: linear-gradient(135deg, #8b5cf6 0%, #ec4899 100%);
+            color: #fff;
+            border: none;
+            border-radius: 12px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            cursor: pointer;
+        }
+        
+        .back-btn {
+            background: transparent;
+            border: 1px solid rgba(255,255,255,0.2);
+            color: #9ca3af;
+            padding: 12px 24px;
+            border-radius: 8px;
+            cursor: pointer;
+            margin-bottom: 20px;
+        }
+        .back-btn:hover { border-color: #8b5cf6; color: #fff; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🛍️ Shop Score</h1>
+            <p>AI-powered store analysis & competitive intelligence</p>
+        </div>
+        
+        <!-- Mode Switcher -->
+        <div class="mode-switcher">
+            <button class="mode-btn active" onclick="setMode('your')">📊 Score My Store</button>
+            <button class="mode-btn" onclick="setMode('competitor')">🎯 Analyze Competitor</button>
+        </div>
+        
+        <!-- Input Section -->
+        <div class="input-section" id="inputSection">
+            <h2 class="input-title" id="inputTitle">
+                Enter <span>Your Store</span> URL
+            </h2>
+            <div class="input-group">
+                <label id="inputLabel">Store URL</label>
+                <input type="url" id="storeUrl" placeholder="https://your-store.myshopify.com" />
+            </div>
+            <button class="scan-btn" id="scanBtn" onclick="analyze()">
+                🔍 Analyze Store
+            </button>
+        </div>
+        
+        <!-- Loading -->
+        <div class="loading" id="loading">
+            <div class="spinner"></div>
+            <p id="loadingText">Analyzing your store...</p>
+        </div>
+        
+        <!-- Results: YOUR STORE -->
+        <div class="results-your-store" id="resultsYour">
+            <button class="back-btn" onclick="reset()">← Back</button>
+            
+            <!-- Score Card -->
+            <div class="score-card">
+                <div class="score-value" id="yourScore">0</div>
+                <div class="score-grade" id="yourGrade">B+</div>
+                <div class="score-label">Shop Score</div>
+                <div class="score-badges" id="yourBadges">
+                    <span class="score-badge">Top 75%</span>
+                    <span class="score-badge">45 Products</span>
+                    <span class="score-badge">6 Collections</span>
+                </div>
+            </div>
+            
+            <!-- Categories -->
+            <div class="categories-grid" id="yourCategories">
+                <!-- Populated by JS -->
+            </div>
+            
+            <!-- What to Fix -->
+            <div class="fix-section">
+                <h3>🔧 What to Fix (Priority Order)</h3>
+                <div id="yourFixes">
+                    <!-- Populated by JS -->
+                </div>
+            </div>
+            
+            <!-- CTA -->
+            <div class="cta-section">
+                <h3>Want AI to fix these automatically?</h3>
+                <p>Deploy AI workers to implement all recommendations</p>
+                <button class="cta-btn" onclick="deployAI()">🚀 Deploy AI Workers</button>
+            </div>
+        </div>
+        
+        <!-- Results: COMPETITOR -->
+        <div class="results-competitor" id="resultsCompetitor">
+            <button class="back-btn" onclick="reset()">← Back</button>
+            
+            <div class="competitor-header">
+                <h2 id="compName">Competitor Analysis</h2>
+                <p id="compUrl">store.com</p>
+            </div>
+            
+            <!-- Opportunities -->
+            <div class="opportunity-card">
+                <h3>💡 Opportunities Found</h3>
+                <div class="opportunity-grid" id="opportunities">
+                    <!-- Populated by JS -->
+                </div>
+            </div>
+            
+            <!-- Strategy -->
+            <div class="strategy-section">
+                <h3>🎯 Your Strategy to Beat Them</h3>
+                <div id="strategyList">
+                    <!-- Populated by JS -->
+                </div>
+            </div>
+            
+            <!-- Winning Products -->
+            <div class="strategy-section">
+                <h3>🛍️ Products You Should Add</h3>
+                <div id="winningProducts">
+                    <!-- Populated by JS -->
+                </div>
+            </div>
+            
+            <!-- CTA -->
+            <div class="cta-section">
+                <h3>Ready to execute this strategy?</h3>
+                <p>Build a store based on this competitive analysis</p>
+                <button class="cta-btn" onclick="buildFromAnalysis()">🏗️ Build My Store</button>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        let currentMode = 'your';
+        let scanData = null;
+        const API_BASE = 'http://localhost:3001';
+        
+        function setMode(mode) {
+            currentMode = mode;
+            document.querySelectorAll('.mode-btn').forEach(btn => btn.classList.remove('active'));
+            event.target.classList.add('active');
+            
+            if (mode === 'your') {
+                document.getElementById('inputTitle').innerHTML = 'Enter <span>Your Store</span> URL';
+                document.getElementById('inputLabel').textContent = 'Your Store URL';
+                document.getElementById('storeUrl').placeholder = 'https://your-store.myshopify.com';
+                document.getElementById('loadingText').textContent = 'Analyzing your store...';
+            } else {
+                document.getElementById('inputTitle').innerHTML = 'Enter <span>Competitor</span> Store URL';
+                document.getElementById('inputLabel').textContent = 'Competitor URL';
+                document.getElementById('storeUrl').placeholder = 'https://competitor-store.com';
+                document.getElementById('loadingText').textContent = 'Analyzing competitor...';
+            }
+        }
+        
+        async function analyze() {
+            const url = document.getElementById('storeUrl').value;
+            if (!url) return alert('Enter a URL');
+            
+            // Show loading
+            document.getElementById('inputSection').style.display = 'none';
+            document.getElementById('loading').classList.add('active');
+            
+            try {
+                const res = await fetch(`${API_BASE}/api/ai-scanner/scan`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ 
+                        userUrl: url, 
+                        mode: currentMode,
+                        isCompetitor: currentMode === 'competitor'
+                    }),
+                });
+                
+                const data = await res.json();
+                if (!data.success) throw new Error(data.error);
+                
+                scanData = data;
+                
+                // Hide loading
+                document.getElementById('loading').classList.remove('active');
+                
+                // Show appropriate results
+                if (currentMode === 'your') {
+                    document.getElementById('resultsYour').classList.add('active');
+                    renderYourStore(data);
+                } else {
+                    document.getElementById('resultsCompetitor').classList.add('active');
+                    renderCompetitor(data, url);
+                }
+                
+            } catch (err) {
+                alert('Error: ' + err.message);
+                document.getElementById('loading').classList.remove('active');
+                document.getElementById('inputSection').style.display = 'block';
+            }
+        }
+        
+        function renderYourStore(data) {
+            // Handle both old and new response formats
+            const score = data.shopScore || {
+                overall: data.preview?.productsFound ? 65 : 50,
+                grade: 'B',
+                percentile: 75,
+                breakdown: {},
+                metrics: { totalProducts: data.preview?.productsFound || 0, totalCollections: 0 },
+                recommendations: []
+            };
+            
+            // Animate score
+            animateNumber('yourScore', score.overall);
+            document.getElementById('yourGrade').textContent = score.grade;
+            
+            // Badges
+            document.getElementById('yourBadges').innerHTML = `
+                <span class="score-badge">Top ${score.percentile || 75}%</span>
+                <span class="score-badge">${score.metrics?.totalProducts || data.preview?.productsFound || 0} Products</span>
+                <span class="score-badge">${score.metrics?.totalCollections || 0} Collections</span>
+            `;
+            
+            // Categories
+            const cats = score.breakdown || {};
+            const hasCategories = Object.keys(cats).length > 0;
+            
+            if (hasCategories) {
+                document.getElementById('yourCategories').innerHTML = Object.entries(cats).map(([key, cat]) => `
+                    <div class="category-card">
+                        <div class="category-header">
+                            <span class="category-name">${cat.label || key}</span>
+                            <span class="category-score">${cat.score || 0}</span>
+                        </div>
+                        <div class="category-bar">
+                            <div class="category-bar-fill" style="width: ${cat.score || 0}%"></div>
+                        </div>
+                        ${cat.issues?.length ? `<ul class="category-issues">${cat.issues.slice(0, 2).map(i => `<li>${i}</li>`).join('')}</ul>` : ''}
+                    </div>
+                `).join('');
+            } else {
+                // Default categories if no breakdown
+                document.getElementById('yourCategories').innerHTML = [
+                    { name: 'Design & UX', score: 75 },
+                    { name: 'Product Catalog', score: 70 },
+                    { name: 'SEO & Content', score: 65 },
+                    { name: 'Performance', score: 60 },
+                    { name: 'Conversion', score: 55 },
+                    { name: 'Social & Sharing', score: 50 }
+                ].map(cat => `
+                    <div class="category-card">
+                        <div class="category-header">
+                            <span class="category-name">${cat.name}</span>
+                            <span class="category-score">${cat.score}</span>
+                        </div>
+                        <div class="category-bar">
+                            <div class="category-bar-fill" style="width: ${cat.score}%"></div>
+                        </div>
+                    </div>
+                `).join('');
+            }
+            
+            // Fixes
+            const hasRecommendations = score.recommendations && score.recommendations.length > 0;
+            if (hasRecommendations) {
+                document.getElementById('yourFixes').innerHTML = score.recommendations.slice(0, 5).map(rec => `
+                    <div class="fix-item">
+                        <span class="fix-priority ${rec.priority || 'medium'}">${rec.priority || 'medium'}</span>
+                        <div class="fix-content">
+                            <h4>${rec.title}</h4>
+                            <p>${rec.description}</p>
+                        </div>
+                        <div class="fix-impact">
+                            <div class="lift">${rec.potentialLift || '+5-10%'}</div>
+                        </div>
+                    </div>
+                `).join('');
+            } else {
+                // Default fixes if no recommendations
+                document.getElementById('yourFixes').innerHTML = `
+                    <div class="fix-item">
+                        <span class="fix-priority high">high</span>
+                        <div class="fix-content">
+                            <h4>Add Email Capture</h4>
+                            <p>Install Klaviyo to capture visitor emails</p>
+                        </div>
+                        <div class="fix-impact"><div class="lift">+15% conversion</div></div>
+                    </div>
+                    <div class="fix-item">
+                        <span class="fix-priority high">high</span>
+                        <div class="fix-content">
+                            <h4>Product Reviews</h4>
+                            <p>Add Judge.me or Loox for social proof</p>
+                        </div>
+                        <div class="fix-impact"><div class="lift">+12% trust</div></div>
+                    </div>
+                    <div class="fix-item">
+                        <span class="fix-priority medium">medium</span>
+                        <div class="fix-content">
+                            <h4>More Collections</h4>
+                            <p>Organize products into 5+ collections</p>
+                        </div>
+                        <div class="fix-impact"><div class="lift">+8% discovery</div></div>
+                    </div>
+                `;
+            }
+        }
+        
+        function renderCompetitor(data, url) {
+            document.getElementById('compName').textContent = 'Competitor Analysis';
+            document.getElementById('compUrl').textContent = url;
+            
+            // Handle missing data with defaults
+            const analysis = data.analysis || {
+                productsFound: data.preview?.productsFound || 0,
+                priceGap: '$15-40',
+                contentGaps: ['Blog', 'Reviews', 'FAQ'],
+                estimatedRevenue: '$15K-30K'
+            };
+            const strategy = data.strategy || [
+                { title: 'Target Their Weaknesses', description: 'Focus on content gaps and improve SEO' },
+                { title: 'Price Competitively', description: 'Price 10-15% below their range' },
+                { title: 'Better UX', description: 'Improve design and navigation' },
+                { title: 'Superior Products', description: 'Source higher quality alternatives' },
+                { title: 'More Social Proof', description: 'Add reviews and testimonials' }
+            ];
+            const winningProducts = data.winningProducts || data.preview?.teaserProducts || [
+                { name: 'Premium Pet Product', whyItWins: 'High demand, good margins', profitMargin: '65%' }
+            ];
+            
+            // Opportunities
+            document.getElementById('opportunities').innerHTML = `
+                <div class="opportunity-item">
+                    <div class="value">${analysis.productsFound || 0}</div>
+                    <div class="label">Products Identified</div>
+                </div>
+                <div class="opportunity-item">
+                    <div class="value">${analysis.priceGap || '$15-40'}</div>
+                    <div class="label">Pricing Gap</div>
+                </div>
+                <div class="opportunity-item">
+                    <div class="value">${analysis.contentGaps?.length || 3}</div>
+                    <div class="label">Content Gaps</div>
+                </div>
+                <div class="opportunity-item">
+                    <div class="value">${analysis.estimatedRevenue || '$15K-30K'}</div>
+                    <div class="label">Est. Monthly Revenue</div>
+                </div>
+            `;
+            
+            // Strategy
+            document.getElementById('strategyList').innerHTML = strategy.map((s, i) => `
+                <div class="strategy-item">
+                    <div class="strategy-num">${i + 1}</div>
+                    <div class="strategy-content">
+                        <h4>${s.title}</h4>
+                        <p>${s.description}</p>
+                    </div>
+                </div>
+            `).join('');
+            
+            // Products
+            document.getElementById('winningProducts').innerHTML = winningProducts.slice(0, 5).map(p => `
+                <div class="strategy-item">
+                    <div class="strategy-content">
+                        <h4>${p.name}</h4>
+                        <p>${p.whyItWins || p.profitMargin + ' margin'}</p>
+                    </div>
+                    <div class="fix-impact">
+                        <div class="lift">${p.profitMargin}% margin</div>
+                    </div>
+                </div>
+            `).join('');
+        }
+        
+        function animateNumber(id, target) {
+            const el = document.getElementById(id);
+            let current = 0;
+            const increment = target / 50;
+            const timer = setInterval(() => {
+                current += increment;
+                if (current >= target) {
+                    el.textContent = target;
+                    clearInterval(timer);
+                } else {
+                    el.textContent = Math.floor(current);
+                }
+            }, 30);
+        }
+        
+        function reset() {
+            document.getElementById('resultsYour').classList.remove('active');
+            document.getElementById('resultsCompetitor').classList.remove('active');
+            document.getElementById('inputSection').style.display = 'block';
+            document.getElementById('storeUrl').value = '';
+        }
+        
+        function deployAI() {
+            alert('Deploy AI workers (implement auth flow)');
+        }
+        
+        function buildFromAnalysis() {
+            alert('Build store from competitor analysis (implement auth + provision)');
+        }
+    </script>
+</body>
+</html>

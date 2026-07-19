@@ -1,0 +1,530 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ShoppDropp - AI-Powered Store Growth</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; overflow-x: hidden; }
+    
+    /* Hero Section */
+    .hero {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      color: white;
+      position: relative;
+      overflow: hidden;
+    }
+    .hero::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.05'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+      opacity: 0.3;
+    }
+    .hero-content {
+      max-width: 1400px;
+      margin: 0 auto;
+      padding: 100px 40px;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 60px;
+      align-items: center;
+      position: relative;
+      z-index: 1;
+    }
+    .hero-text h1 {
+      font-size: 4em;
+      font-weight: 800;
+      line-height: 1.1;
+      margin-bottom: 20px;
+    }
+    .hero-text h1 span {
+      background: linear-gradient(135deg, #feca57, #ff6b6b);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+    .hero-text p {
+      font-size: 1.3em;
+      opacity: 0.9;
+      margin-bottom: 30px;
+      line-height: 1.6;
+    }
+    .hero-cta {
+      display: flex;
+      gap: 15px;
+      flex-wrap: wrap;
+    }
+    .btn {
+      padding: 16px 36px;
+      border-radius: 12px;
+      font-size: 1.1em;
+      font-weight: 600;
+      cursor: pointer;
+      border: none;
+      transition: all 0.3s;
+      text-decoration: none;
+      display: inline-block;
+    }
+    .btn-white {
+      background: white;
+      color: #667eea;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.2);
+    }
+    .btn-white:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 30px rgba(0,0,0,0.3);
+    }
+    .btn-outline {
+      background: transparent;
+      color: white;
+      border: 2px solid rgba(255,255,255,0.3);
+    }
+    .btn-outline:hover {
+      background: rgba(255,255,255,0.1);
+      border-color: white;
+    }
+
+    /* Hero Visual */
+    .hero-visual {
+      position: relative;
+    }
+    .floating-card {
+      background: white;
+      border-radius: 20px;
+      padding: 25px;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.2);
+      position: absolute;
+      animation: float 6s ease-in-out infinite;
+    }
+    .floating-card.card-1 {
+      top: 0;
+      right: 0;
+      width: 280px;
+      animation-delay: 0s;
+    }
+    .floating-card.card-2 {
+      bottom: 80px;
+      left: 0;
+      width: 260px;
+      animation-delay: 2s;
+      background: linear-gradient(135deg, #ff6b6b, #feca57);
+      color: white;
+    }
+    .floating-card.card-3 {
+      top: 50%;
+      right: -20px;
+      width: 200px;
+      animation-delay: 4s;
+    }
+    @keyframes float {
+      0%, 100% { transform: translateY(0px); }
+      50% { transform: translateY(-20px); }
+    }
+
+    /* Free Scanner Section */
+    .scanner-section {
+      background: #f8f9fa;
+      padding: 100px 40px;
+      text-align: center;
+    }
+    .scanner-section h2 {
+      font-size: 3em;
+      margin-bottom: 15px;
+      color: #333;
+    }
+    .scanner-section p {
+      color: #666;
+      font-size: 1.2em;
+      margin-bottom: 40px;
+    }
+    .scanner-box {
+      max-width: 700px;
+      margin: 0 auto;
+      background: white;
+      border-radius: 20px;
+      padding: 40px;
+      box-shadow: 0 10px 40px rgba(0,0,0,0.1);
+    }
+    .scanner-input {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 20px;
+    }
+    .scanner-input input {
+      flex: 1;
+      padding: 18px;
+      border: 2px solid #e0e0e0;
+      border-radius: 12px;
+      font-size: 1em;
+    }
+    .scanner-input input:focus {
+      outline: none;
+      border-color: #667eea;
+    }
+    .scanner-submit {
+      background: linear-gradient(135deg, #667eea, #764ba2);
+      color: white;
+      padding: 18px 36px;
+      border: none;
+      border-radius: 12px;
+      font-size: 1em;
+      font-weight: 600;
+      cursor: pointer;
+    }
+
+    /* Features Grid */
+    .features-section {
+      padding: 100px 40px;
+      max-width: 1400px;
+      margin: 0 auto;
+    }
+    .features-section h2 {
+      font-size: 2.5em;
+      text-align: center;
+      margin-bottom: 60px;
+      color: #333;
+    }
+    .features-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      gap: 30px;
+    }
+    .feature-card {
+      background: white;
+      border-radius: 20px;
+      padding: 40px;
+      text-align: center;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.05);
+      transition: all 0.3s;
+    }
+    .feature-card:hover {
+      transform: translateY(-5px);
+      box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+    }
+    .feature-icon {
+      font-size: 4em;
+      margin-bottom: 20px;
+    }
+    .feature-card h3 {
+      font-size: 1.3em;
+      margin-bottom: 10px;
+      color: #333;
+    }
+    .feature-card p {
+      color: #666;
+      line-height: 1.6;
+    }
+
+    /* How It Works */
+    .how-it-works {
+      background: #1a1a2e;
+      color: white;
+      padding: 100px 40px;
+    }
+    .how-it-works h2 {
+      font-size: 2.5em;
+      text-align: center;
+      margin-bottom: 60px;
+    }
+    .steps-grid {
+      max-width: 1200px;
+      margin: 0 auto;
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 30px;
+    }
+    .step-card {
+      text-align: center;
+      position: relative;
+    }
+    .step-card::after {
+      content: '→';
+      position: absolute;
+      top: 30px;
+      right: -20px;
+      font-size: 2em;
+      opacity: 0.3;
+    }
+    .step-card:last-child::after { display: none; }
+    .step-number {
+      width: 70px;
+      height: 70px;
+      background: linear-gradient(135deg, #667eea, #764ba2);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.8em;
+      font-weight: bold;
+      margin: 0 auto 20px;
+    }
+    .step-card h3 {
+      font-size: 1.2em;
+      margin-bottom: 10px;
+    }
+    .step-card p {
+      opacity: 0.7;
+      line-height: 1.5;
+    }
+
+    /* Pricing */
+    .pricing-section {
+      padding: 100px 40px;
+      background: #f8f9fa;
+    }
+    .pricing-section h2 {
+      font-size: 2.5em;
+      text-align: center;
+      margin-bottom: 60px;
+      color: #333;
+    }
+    .pricing-grid {
+      max-width: 1200px;
+      margin: 0 auto;
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 30px;
+    }
+    .pricing-card {
+      background: white;
+      border-radius: 20px;
+      padding: 40px;
+      text-align: center;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.05);
+      transition: all 0.3s;
+    }
+    .pricing-card.featured {
+      border: 3px solid #667eea;
+      transform: scale(1.05);
+      box-shadow: 0 20px 60px rgba(102,126,234,0.2);
+    }
+    .pricing-card h3 {
+      font-size: 1.5em;
+      margin-bottom: 10px;
+    }
+    .price {
+      font-size: 3em;
+      font-weight: 800;
+      color: #667eea;
+      margin: 20px 0;
+    }
+    .price span {
+      font-size: 0.4em;
+      color: #666;
+      font-weight: 400;
+    }
+    .pricing-features {
+      text-align: left;
+      margin: 30px 0;
+    }
+    .pricing-features li {
+      list-style: none;
+      padding: 8px 0;
+      color: #666;
+    }
+    .pricing-features li::before {
+      content: '✓';
+      color: #4caf50;
+      margin-right: 10px;
+      font-weight: bold;
+    }
+
+    /* Footer */
+    .footer {
+      background: #1a1a2e;
+      color: white;
+      padding: 60px 40px;
+      text-align: center;
+    }
+    .footer h2 {
+      font-size: 2em;
+      margin-bottom: 20px;
+    }
+    .footer p {
+      opacity: 0.7;
+      margin-bottom: 30px;
+    }
+
+    @media (max-width: 968px) {
+      .hero-content { grid-template-columns: 1fr; }
+      .steps-grid { grid-template-columns: 1fr; }
+      .step-card::after { display: none; }
+      .pricing-grid { grid-template-columns: 1fr; }
+      .pricing-card.featured { transform: none; }
+    }
+  </style>
+</head>
+<body>
+  <!-- Hero Section -->
+  <section class="hero">
+    <div class="hero-content">
+      <div class="hero-text">
+        <h1>Turn Your Store Into a <span>Growth Machine</span></h1>
+        <p>AI-powered tools that capture emails, create viral content, and drive sales on autopilot. Start with our free scanner.</p>
+        <div class="hero-cta">
+          <a href="#scanner" class="btn btn-white">🚀 Free Store Scanner</a>
+          <a href="https://github.com/happypuppysupply/shoppdropp" class="btn btn-outline">View on GitHub</a>
+        </div>
+      </div>
+      <div class="hero-visual">
+        <div class="floating-card card-1">
+          <div style="font-size: 2em; margin-bottom: 10px">📸</div>
+          <h3 style="font-size: 1.2em; color: #333; margin-bottom: 8px">AI Puppy Mixer</h3>
+          <p style="color: #666; font-size: 0.9em">1,200 emails/mo • 85% share rate</p>
+          <div style="margin-top: 10px; font-size: 0.8em; color: #4caf50">● Live</div>
+        </div>
+        <div class="floating-card card-2">
+          <div style="font-size: 2em; margin-bottom: 10px">📚</div>
+          <h3 style="font-size: 1.2em; margin-bottom: 8px">Breed Glossary</h3>
+          <p style="font-size: 0.9em; opacity: 0.9">200+ SEO pages • 5K visits/mo</p>
+          <div style="margin-top: 10px; font-size: 0.8em; opacity: 0.7">⏱️ 3 hour setup</div>
+        </div>
+        <div class="floating-card card-3">
+          <div style="font-size: 2em; margin-bottom: 10px">🎬</div>
+          <h3 style="font-size: 1.1em; color: #333; margin-bottom: 8px">UGC Videos</h3>
+          <p style="color: #666; font-size: 0.85em">Per product auto-generated</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Free Scanner Section -->
+  <section class="scanner-section" id="scanner">
+    <h2>🔍 Free Store Scanner</h2>
+    <p>See what AI tools will grow your store. Takes 30 seconds.</p>
+    <div class="scanner-box">
+      <div class="scanner-input">
+        <input type="url" placeholder="https://your-store.myshopify.com" id="scanUrl">
+        <button class="scanner-submit" onclick="startScan()">Scan My Store</button>
+      </div>
+      <p style="color: #666; font-size: 0.9em;">✓ No signup required • ✓ Instant results • ✓ 100% free</p>
+    </div>
+  </section>
+
+  <!-- Features -->
+  <section class="features-section">
+    <h2>🚀 Everything Your Store Needs</h2>
+    <div class="features-grid">
+      <div class="feature-card">
+        <div class="feature-icon">🤖</div>
+        <h3>8 AI Workers</h3>
+        <p>Product research, theme design, ads, pricing, inventory, fulfillment, analytics - all automated.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">📸</div>
+        <h3>Viral Growth Tools</h3>
+        <p>AI puppy mixer, breed quizzes, photo tools - all capturing emails and driving shares.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">📚</div>
+        <h3>SEO Content Engine</h3>
+        <p>Breed glossaries, comparison tools, and care guides targeting 200+ high-volume keywords.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">🎬</div>
+        <h3>UGC Video Creator</h3>
+        <p>Auto-generate TikTok/Reels videos for every product. AI scripts, voiceovers, and captions.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">📧</div>
+        <h3>Email Automation</h3>
+        <p>Klaviyo integration with pre-built flows. Welcome series, abandoned cart, re-engagement.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">💰</div>
+        <h3>Smart Upsells</h3>
+        <p>Bundler integration auto-creates product bundles based on quiz results and preferences.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- How It Works -->
+  <section class="how-it-works">
+    <h2>How It Works</h2>
+    <div class="steps-grid">
+      <div class="step-card">
+        <div class="step-number">1</div>
+        <h3>Scan Store</h3>
+        <p>Enter your store URL. AI scans products, pages, and competitors.</p>
+      </div>
+      <div class="step-card">
+        <div class="step-number">2</div>
+        <h3>AI Suggests</h3>
+        <p>Get personalized recommendations for viral tools and growth strategies.</p>
+      </div>
+      <div class="step-card">
+        <div class="step-number">3</div>
+        <h3>You Select</h3>
+        <p>Pick the ideas you like. Workers auto-organize on your VPS.</p>
+      </div>
+      <div class="step-card">
+        <div class="step-number">4</div>
+        <h3>Launch & Grow</h3>
+        <p>One-click deploy to Vercel. Start capturing emails and sales.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- Pricing -->
+  <section class="pricing-section">
+    <h2>💳 Simple Pricing</h2>
+    <div class="pricing-grid">
+      <div class="pricing-card">
+        <h3>Starter</h3>
+        <div class="price">$6<span>/mo</span></div>
+        <ul class="pricing-features">
+          <li>1 VPS with 8 workers</li>
+          <li>2 viral tools</li>
+          <li>Basic email capture</li>
+          <li>500 leads/mo</li>
+        </ul>
+        <a href="/shop-score.html" class="btn btn-outline" style="display:block;width:100%;border:2px solid #667eea;color:#667eea">Get Started</a>
+      </div>
+      <div class="pricing-card featured">
+        <h3>Growth</h3>
+        <div class="price">$29<span>/mo</span></div>
+        <ul class="pricing-features">
+          <li>All 8 viral tools</li>
+          <li>UGC video generator</li>
+          <li>Breed glossary SEO</li>
+          <li>Klaviyo integration</li>
+          <li>5,000 leads/mo</li>
+        </ul>
+        <a href="/shop-score.html" class="btn btn-white" style="display:block;width:100%">Start Growing</a>
+      </div>
+      <div class="pricing-card">
+        <h3>Agency</h3>
+        <div class="price">$199<span>/mo</span></div>
+        <ul class="pricing-features">
+          <li>10 stores</li>
+          <li>White-label tools</li>
+          <li>Priority support</li>
+          <li>Custom integrations</li>
+          <li>Unlimited leads</li>
+        </ul>
+        <a href="/shop-score.html" class="btn btn-outline" style="display:block;width:100%;border:2px solid #667eea;color:#667eea">Contact Sales</a>
+      </div>
+    </div>
+  </section>
+
+  <!-- Footer CTA -->
+  <section class="footer">
+    <h2>Ready to Grow?</h2>
+    <p>Join 500+ stores using AI to capture emails and drive sales.</p>
+    <a href="#scanner" class="btn btn-white" style="font-size: 1.3em; padding: 20px 50px;">🚀 Free Store Scanner</a>
+    <p style="margin-top: 20px; font-size: 0.9em;">No credit card required • 30-second scan • Instant results</p>
+  </section>
+
+  <script>
+    function startScan() {
+      const url = document.getElementById('scanUrl').value;
+      if (!url) return alert('Enter your store URL');
+      window.location.href = `/ai-configurator-viral.html?store=${encodeURIComponent(url)}`;
+    }
+  </script>
+</body>
+</html>

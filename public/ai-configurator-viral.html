@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ShoppDropp - AI Growth Configurator</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { 
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; 
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      min-height: 100vh;
+      color: #333;
+      padding-bottom: 100px;
+    }
+    .container { max-width: 1400px; margin: 0 auto; padding: 20px; }
+    .card { background: white; border-radius: 20px; padding: 30px; margin-bottom: 20px; box-shadow: 0 10px 40px rgba(0,0,0,0.1); }
+    .header { background: rgba(255,255,255,0.95); border-radius: 20px; padding: 40px; margin-bottom: 30px; text-align: center; }
+    .header h1 { font-size: 2.5em; background: linear-gradient(135deg, #667eea, #764ba2); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+    .section { display: none; }
+    .section.active { display: block; }
+    .btn { padding: 14px 32px; border-radius: 12px; font-size: 1em; font-weight: 600; cursor: pointer; border: none; transition: all 0.3s; }
+    .btn-primary { background: linear-gradient(135deg, #667eea, #764ba2); color: white; }
+    .btn-secondary { background: #e0e0e0; color: #333; }
+    .recommendation-card { border: 2px solid #e0e0e0; border-radius: 16px; padding: 20px; margin-bottom: 15px; cursor: pointer; position: relative; }
+    .recommendation-card:hover { border-color: #667eea; }
+    .recommendation-card.selected { border-color: #667eea; background: #f8f9ff; }
+    .worker-card { display: flex; align-items: center; gap: 15px; padding: 16px; background: #f8f9fa; border-radius: 12px; margin-bottom: 10px; border-left: 4px solid #ccc; }
+    .worker-card.active { border-left-color: #4caf50; background: #f1f8e9; }
+    .vps-card { background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%); color: white; border-radius: 20px; padding: 30px; }
+    .action-bar { position: fixed; bottom: 0; left: 0; right: 0; background: white; padding: 20px 40px; box-shadow: 0 -10px 40px rgba(0,0,0,0.1); display: flex; justify-content: space-between; align-items: center; z-index: 100; }
+    .loading-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(255,255,255,0.95); z-index: 1000; display: none; align-items: center; justify-content: center; flex-direction: column; }
+    .loading-overlay.active { display: flex; }
+    .spinner { width: 60px; height: 60px; border: 4px solid #e0e0e0; border-top-color: #667eea; border-radius: 50%; animation: spin 1s linear infinite; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1>🤖 AI Growth Configurator</h1>
+      <p style="color: #666;">AI scans your store → Suggests ideas → You pick → Workers deploy</p>
+    </div>
+    
+    <!-- STEP 1: Scan -->
+    <div class="section active" id="step1">
+      <div class="card">
+        <h2 style="margin-bottom: 20px;">🔍 Enter Your Store</h2>
+        <div style="display: flex; gap: 10px;">
+          <input type="url" id="storeUrl" placeholder="https://your-store.myshopify.com" style="flex: 1; padding: 18px; border: 2px solid #e0e0e0; border-radius: 12px;">
+          <button class="btn btn-primary" onclick="scanStore()">Analyze</button>
+        </div>
+      </div>
+      <div class="card" id="scanResults" style="display:none"></div>
+    </div>
+    
+    <!-- STEP 2: AI Suggestions -->
+    <div class="section" id="step2">
+      <div class="card">
+        <h2 style="margin-bottom: 20px;">💡 AI Recommendations</h2>
+        <div id="aiRecommendations"></div>
+      </div>
+    </div>
+    
+    <!-- STEP 3: Select Tools -->
+    <div class="section" id="step3">
+      <div class="card">
+        <h2 style="margin-bottom: 20px;">✅ Select Ideas</h2>
+        <div id="toolSelection"></div>
+      </div>
+    </div>
+    
+    <!-- STEP 4: Workers -->
+    <div class="section" id="step4">
+      <div class="card">
+        <h2 style="margin-bottom: 20px;">🤖 Workers Aligned</h2>
+        <div id="workerOrganization"></div>
+      </div>
+    </div>
+    
+    <!-- STEP 5: Deploy (OAuth Gated) -->
+    <div class="section" id="step5">
+      <div class="vps-card">
+        <h2 style="margin-bottom: 20px;">🚀 Deploy</h2>
+        <p style="margin-bottom: 20px;">Your workers need a VPS home. Provision securely.</p>
+        <div id="oauthGate">
+          <button class="btn btn-primary" onclick="initiateOAuth()" style="font-size: 1.2em; padding: 16px 40px;">
+            🔐 Sign In with Google to Deploy
+          </button>
+          <p style="margin-top: 15px; opacity: 0.8;">VPS creation is gated behind OAuth for security</p>
+        </div>
+        <div id="provisionUI" style="display:none;">
+          <p>✅ Authenticated! Ready to deploy.</p>
+          <button class="btn btn-primary" onclick="deployAll()" style="margin-top: 15px;">🚀 Provision VPS & Launch Workers</button>
+        </div>
+      </div>
+    </div>
+  </div>
+  
+  <div class="action-bar">
+    <span style="font-weight: 700;">Step <span id="stepNum">1</span> of 5</span>
+    <div style="display: flex; gap: 15px;">
+      <button class="btn btn-secondary" onclick="prevStep()" id="btnBack" style="display:none">Back</button>
+      <button class="btn btn-primary" onclick="nextStep()" id="btnNext">Continue</button>
+    </div>
+  </div>
+  
+  <div class="loading-overlay" id="loading">
+    <div class="spinner"></div>
+    <p style="margin-top: 20px; color: #666;">AI analyzing...</p>
+  </div>
+
+  <script>
+    let step = 1;
+    let selectedTools = new Set();
+    
+    const suggestions = [
+      { id: 'breed-glossary', title: '📚 Breed Glossary', desc: '200+ breed pages for SEO. 5K organic visits/mo.', impact: 'High', value: 5000, tools: ['product-research', 'catalog-optimization'] },
+      { id: 'ugc-videos', title: '🎬 UGC Video Generator', desc: 'TikTok/Reels per product. 35% conversion boost.', impact: 'High', value: 3000, tools: ['meta-ads', 'catalog-optimization'] },
+      { id: 'ai-mixer', title: '📸 AI Puppy Mixer', desc: 'Upload photo, see AI mixed puppies. 85% share rate.', impact: 'High', value: 6000, tools: ['theme-design', 'meta-ads'] },
+      { id: 'dog-quiz', title: '🐕 Personality Quiz', desc: '500+ emails/mo. 40% capture rate.', impact: 'Medium', value: 2500, tools: ['catalog-optimization', 'theme-design'] },
+      { id: 'breed-compare', title: '⚖️ Breed Comparison', desc: 'Compare breeds. High commercial intent keywords.', impact: 'Medium', value: 4000, tools: ['product-research'] }
+    ];
+    
+    const allWorkers = {
+      'product-research': { icon: '🔍', name: 'Product Research', desc: 'SEO content & breed research' },
+      'catalog-optimization': { icon: '📦', name: 'Catalog Optimization', desc: 'Product SEO & quizzes' },
+      'theme-design': { icon: '🎨', name: 'Theme Designer', desc: 'Viral landing pages' },
+      'meta-ads': { icon: '📢', name: 'Meta Ads', desc: 'UGC video & ad creation' },
+      'pricing': { icon: '💰', name: 'Pricing Optimizer', desc: 'Dynamic pricing' },
+      'inventory-sync': { icon: '🔄', name: 'Inventory Sync', desc: 'Stock management' },
+      'order-fulfillment': { icon: '📤', name: 'Order Fulfillment', desc: 'Auto fulfillment' },
+      'analytics': { icon: '📊', name: 'Analytics Engine', desc: 'Performance tracking' }
+    };
+    
+    function updateUI() {
+      document.querySelectorAll('.section').forEach((el, i) => el.classList.toggle('active', i + 1 === step));
+      document.getElementById('stepNum').textContent = step;
+      document.getElementById('btnBack').style.display = step > 1 ? 'block' : 'none';
+      document.getElementById('btnNext').textContent = step === 5 ? '🚀 Deploy' : 'Continue';
+    }
+    
+    function nextStep() {
+      if (step === 5) return;
+      step++;
+      updateUI();
+      if (step === 2) renderSuggestions();
+      if (step === 3) renderTools();
+      if (step === 4) renderWorkers();
+    }
+    
+    function prevStep() {
+      if (step > 1) { step--; updateUI(); }
+    }
+    
+    async function scanStore() {
+      document.getElementById('loading').classList.add('active');
+      setTimeout(() => {
+        document.getElementById('loading').classList.remove('active');
+        document.getElementById('scanResults').style.display = 'block';
+        document.getElementById('scanResults').innerHTML = `
+          <h3>📊 Happy Puppy Supply Scanned</h3>
+          <p>✅ 165 products • 9 collections • No SEO content detected</p>
+          <p style="color: #667eea; margin-top: 10px;">💡 5 high-impact opportunities found</p>
+        `;
+      }, 1500);
+    }
+    
+    function renderSuggestions() {
+      document.getElementById('aiRecommendations').innerHTML = suggestions.map(s => `
+        <div class="recommendation-card" onclick="toggleSelect('${s.id}')" id="rec-${s.id}">
+          <h3>${s.title}</h3>
+          <p>${s.desc}</p>
+          <span style="background: #f0f4ff; color: #667eea; padding: 4px 12px; border-radius: 20px; font-size: 0.85em;">+$${s.value.toLocaleString()}/mo</span>
+        </div>
+      `).join('');
+    }
+    
+    function toggleSelect(id) {
+      if (selectedTools.has(id)) selectedTools.delete(id);
+      else selectedTools.add(id);
+      document.getElementById('rec-' + id).classList.toggle('selected');
+    }
+    
+    function renderTools() {
+      const selected = suggestions.filter(s => selectedTools.has(s.id));
+      document.getElementById('toolSelection').innerHTML = selected.map(s => `
+        <div style="padding: 15px; background: #f8f9fa; border-radius: 12px; margin-bottom: 10px;">
+          <strong>${s.title}</strong>
+          <p style="color: #666; font-size: 0.9em;">${s.desc}</p>
+        </div>
+      `).join('') || '<p>Select ideas from previous step</p>';
+    }
+    
+    function renderWorkers() {
+      const activeWorkers = new Set();
+      suggestions.filter(s => selectedTools.has(s.id)).forEach(s => {
+        s.tools.forEach(t => activeWorkers.add(t));
+      });
+      
+      document.getElementById('workerOrganization').innerHTML = Object.entries(allWorkers).map(([id, w]) => {
+        const active = activeWorkers.has(id);
+        return `
+          <div class="worker-card ${active ? 'active' : ''}">
+            <span style="font-size: 2em;">${w.icon}</span>
+            <div style="flex: 1;">
+              <strong>${w.name}</strong>
+              <p style="color: #666; font-size: 0.85em;">${w.desc}</p>
+            </div>
+            <span style="padding: 6px 14px; border-radius: 20px; font-size: 0.8em; font-weight: 600; background: ${active ? '#4caf50' : '#e0e0e0'}; color: ${active ? 'white' : '#666'};">${active ? '✓ Active' : 'Idle'}</span>
+          </div>
+        `;
+      }).join('');
+    }
+    
+    function initiateOAuth() {
+      // Google OAuth flow would redirect here
+      document.getElementById('oauthGate').style.display = 'none';
+      document.getElementById('provisionUI').style.display = 'block';
+    }
+    
+    function deployAll() {
+      alert('🚀 Deploying!\n\n• Provisioning Hetzner VPS\n• Starting 8 AI workers\n• Deploying viral tools to Vercel\n\nYou\'ll get Slack updates!');
+    }
+  </script>
+</body>
+</html>

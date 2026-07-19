@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ShoppDropp AI Worker Chat</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:#0f0f1a;color:#e0e0e0;min-height:100vh;display:flex}
+.sidebar{width:280px;background:#1a1a2e;border-right:1px solid #2a2a3e;padding:20px;display:flex;flex-direction:column}
+.sidebar h1{font-size:1.2em;background:linear-gradient(135deg,#667eea,#a855f7);-webkit-background-clip:text;-webkit-text-fill-color:transparent;margin-bottom:20px}
+.worker-item{display:flex;align-items:center;gap:10px;padding:12px;border-radius:10px;margin-bottom:8px;cursor:pointer;border:1px solid transparent}
+.worker-item:hover{background:rgba(102,126,234,0.1);border-color:rgba(102,126,234,0.3)}
+.worker-item.active{background:rgba(102,126,234,0.2);border-color:#667eea}
+.worker-name{font-weight:600;font-size:0.9em}
+.worker-status{font-size:0.75em;padding:2px 8px;border-radius:10px}
+.status-online{background:#22c55e;color:white}
+.status-idle{background:#f59e0b;color:black}
+.status-offline{background:#ef4444;color:white}
+.main{flex:1;display:flex;flex-direction:column}
+.chat-header{padding:20px 25px;border-bottom:1px solid #2a2a3e;display:flex;justify-content:space-between;align-items:center}
+.messages{flex:1;overflow-y:auto;padding:25px}
+.message{display:flex;gap:12px;margin-bottom:20px;animation:fadeIn 0.3s}
+@keyframes fadeIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+.message-avatar{width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:1.2em;flex-shrink:0}
+.message-avatar.ai{background:linear-gradient(135deg,#667eea,#a855f7)}
+.message-avatar.user{background:#2a2a3e}
+.message-bubble{background:#1a1a2e;border:1px solid #2a2a3e;border-radius:16px;padding:14px 18px;max-width:700px;line-height:1.6}
+.message-bubble pre{background:#0d0d1a;border-radius:8px;padding:12px;overflow-x:auto;margin:10px 0;border:1px solid #2a2a3e;font-size:0.85em;color:#a5b4fc}
+.suggestions{display:flex;gap:8px;padding:0 25px 15px;flex-wrap:wrap}
+.suggestion-chip{background:rgba(102,126,234,0.1);border:1px solid rgba(102,126,234,0.3);color:#a5b4fc;padding:8px 16px;border-radius:20px;font-size:0.85em;cursor:pointer}
+.suggestion-chip:hover{background:rgba(102,126,234,0.2);color:white}
+.input-area{padding:20px 25px;border-top:1px solid #2a2a3e;display:flex;gap:12px}
+.chat-input{flex:1;background:#1a1a2e;border:1px solid #2a2a3e;border-radius:12px;padding:14px 18px;color:white;font-size:1em;outline:none}
+.send-btn{background:linear-gradient(135deg,#667eea,#a855f7);color:white;border:none;border-radius:12px;padding:12px 24px;cursor:pointer;font-weight:600}
+.api-panel{width:320px;background:#1a1a2e;border-left:1px solid #2a2a3e;padding:20px;overflow-y:auto;display:none}
+.api-panel.open{display:block}
+.endpoint-item{padding:10px;border-radius:8px;margin-bottom:8px;font-size:0.85em;border:1px solid transparent;cursor:pointer}
+.endpoint-item:hover{background:rgba(102,126,234,0.1);border-color:rgba(102,126,234,0.3)}
+.method-tag{display:inline-block;padding:2px 6px;border-radius:4px;font-size:0.75em;font-weight:bold;margin-right:6px}
+.get{background:rgba(34,197,94,0.2);color:#22c55e}
+.post{background:rgba(168,85,247,0.2);color:#a855f7}
+</style>
+</head>
+<body>
+<div class="sidebar">
+  <h1>🤖 AI Workers</h1>
+  <div id="workerList">
+    <div class="worker-item active" data-w="product-research"><span>🔍</span><span class="worker-name">Product Research</span><span class="worker-status status-online">ON</span></div>
+    <div class="worker-item" data-w="catalog-opt"><span>📦</span><span class="worker-name">Catalog Optimization</span><span class="worker-status status-idle">IDLE</span></div>
+    <div class="worker-item" data-w="theme"><span>🎨</span><span class="worker-name">Theme Designer</span><span class="worker-status status-offline">OFF</span></div>
+    <div class="worker-item" data-w="meta"><span>📢</span><span class="worker-name">Meta Ads</span><span class="worker-status status-offline">OFF</span></div>
+    <div class="worker-item" data-w="pricing"><span>💰</span><span class="worker-name">Pricing</span><span class="worker-status status-offline">OFF</span></div>
+    <div class="worker-item" data-w="inventory"><span>🔄</span><span class="worker-name">Inventory Sync</span><span class="worker-status status-offline">OFF</span></div>
+    <div class="worker-item" data-w="orders"><span>📤</span><span class="worker-name">Order Fulfillment</span><span class="worker-status status-online">ON</span></div>
+    <div class="worker-item active" data-w="analytics"><span>📊</span><span class="worker-name">Analytics Engine</span><span class="worker-status status-online">ON</span></div>
+  </div>
+  <button onclick="toggleApiPanel()" style="width:100%;margin-top:auto;padding:14px;background:linear-gradient(135deg,#667eea,#a855f7);color:white;border:none;border-radius:12px;font-weight:600;cursor:pointer">📋 API Docs</button>
+</div>
+
+<div class="main">
+  <div class="chat-header">
+    <h2>💬 AI Worker Chat</h2>
+    <span style="color:#22c55e;font-size:0.9em">● 3 Workers Active</span>
+  </div>
+  <div class="messages" id="messages">
+    <div class="message">
+      <div class="message-avatar ai">🤖</div>
+      <div class="message-bubble">
+        <p><strong>AI Worker Command Center ready!</strong></p>
+        <p style="margin-top:8px">I manage your workers and generate API docs. Commands:</p>
+        <ul style="margin:8px 0;padding-left:20px">
+          <li><code style="background:#0d0d1a;padding:2px 6px;border-radius:4px">start [worker]</code> - Launch worker</li>
+          <li><code style="background:#0d0d1a;padding:2px 6px;border-radius:4px">stop [worker]</code> - Stop worker</li>
+          <li><code style="background:#0d0d1a;padding:2px 6px;border-radius:4px">status</code> - Worker status</li>
+          <li><code style="background:#0d0d1a;padding:2px 6px;border-radius:4px">api docs</code> - Generate APIs</li>
+          <li><code style="background:#0d0d1a;padding:2px 6px;border-radius:4px">workflow [name]</code> - View workflow</li>
+        </ul>
+        <p style="color:#a5b4fc;margin-top:8px">Type a command or click a chip below!</p>
+      </div>
+    </div>
+  </div>
+  <div class="suggestions" id="suggestions">
+    <span class="suggestion-chip" onclick="quickCmd('Start product research worker')">▶️ Start Product Research</span>
+    <span class="suggestion-chip" onclick="quickCmd('Show worker status')">📊 Worker Status</span>
+    <span class="suggestion-chip" onclick="quickCmd('Generate API docs')">📋 Generate APIs</span>
+    <span class="suggestion-chip" onclick="quickCmd('Show workflow breed-glossary')">📋 Breed Glossary Flow</span>
+    <span class="suggestion-chip" onclick="quickCmd('Show workflow ai-puppy-mixer')">📸 Puppy Mixer Flow</span>
+  </div>
+  <div class="input-area">
+    <input type="text" class="chat-input" id="chatInput" placeholder="Type command... (e.g., 'start meta ads worker')" onkeypress="if(event.key==='Enter')sendMsg()">
+    <button class="send-btn" onclick="sendMsg()">➤</button>
+  </div>
+</div>
+
+<div class="api-panel" id="apiPanel">
+  <h3 style="margin-bottom:20px;color:#a5b4fc">📋 Generated API Docs</h3>
+  <p style="color:#666;font-size:0.85em;margin-bottom:20px">APIs needed for active workers:</p>
+  <div id="apiEndpoints"></div>
+</div>
+
+<script>
+const msgs = document.getElementById('messages');
+const workerData = {
+  'product-research':{apis:[{m:'POST',path:'/api/ai/research-products',desc:'Research winning products'},{m:'POST',path:'/api/ai/generate-content',desc:'Generate breed glossary pages'},{m:'GET',path:'/api/ai/breed/:name',desc:'Get breed info'}]},
+  'catalog-opt':{apis:[{m:'POST',path:'/api/products/optimize',desc:'Optimize product SEO'},{m:'POST',path:'/api/quiz/generate',desc:'Generate quiz from catalog'}]},
+  'theme':{apis:[{m:'POST',path:'/api/theme/customize',desc:'Customize theme'},{m:'POST',path:'/api/theme/viral-page',desc:'Create viral landing page'}]},
+  'meta':{apis:[{m:'POST',path:'/api/ads/campaign',desc:'Create Meta ad campaign'},{m:'POST',path:'/api/ads/ugc-video',desc:'Generate UGC video'}]},
+  'orders':{apis:[{m:'POST',path:'/api/orders/fulfill',desc:'Auto-fulfill orders'},{m:'GET',path:'/api/orders/status',desc:'Check order status'}]},
+  'analytics':{apis:[{m:'GET',path:'/api/analytics/dashboard',desc:'Dashboard stats'},{m:'GET',path:'/api/analytics/leads',desc:'Lead gen stats'},{m:'GET',path:'/api/analytics/viral',desc:'Viral sharing stats'}]}
+};
+const workflows = {
+  'breed-glossary':[{n:'Research breed list',w:'product-research',s:'✅'},{n:'Generate content',w:'product-research',s:'✅'},{n:'Create Shopify pages',w:'theme',s:'⏳'},{n:'Add internal links',w:'catalog-opt',s:'⏳'}],
+  'ai-puppy-mixer':[{n:'Build upload form',w:'theme',s:'✅'},{n:'Setup Supabase storage',w:'catalog-opt',s:'✅'},{n:'Create AI generation API',w:'meta',s:'🔄'},{n:'Connect Klaviyo',w:'analytics',s:'⏳'}],
+  'ugc-videos':[{n:'Fetch product catalog',w:'catalog-opt',s:'✅'},{n:'Generate video scripts',w:'meta',s:'🔄'},{n:'Create video assets',w:'meta',s:'⏳'}]
+};
+function addMsg(txt,isU=false){
+  const d=document.createElement('div');d.className='message';d.innerHTML=`<div class="message-avatar ${isU?'user':'ai'}">${isU?'👤':'🤖'}</div><div class="message-bubble">${txt}</div>`;msgs.appendChild(d);msgs.scrollTop=msgs.scrollHeight;
+}
+function sendMsg(){const t=document.getElementById('chatInput').value.trim();if(!t)return;addMsg(`<p>${t}</p>`,true);document.getElementById('chatInput').value='';setTimeout(()=>process(t),300)}
+function quickCmd(c){addMsg(`<p>${c}</p>`,true);setTimeout(()=>process(c),300)}
+function toggleApiPanel(){document.getElementById('apiPanel').classList.toggle('open');refreshApiPanel()}
+
+function process(t){
+  const l=t.toLowerCase();
+  if(l.includes('start')){const w=findWorker(t);if(w){addMsg(`<p>✅ <strong>Starting ${w} worker...</strong></p><p>Worker initialized and connected to VPS.</p>`);updateWorkerStatus(w,'ON')}else addMsg(`<p>❌ Specify a worker. Try: "Start product research worker"</p>`)}
+  else if(l.includes('stop')){const w=findWorker(t);if(w){addMsg(`<p>🛑 <strong>Stopping ${w} worker...</strong></p><p>Worker paused successfully.</p>`);updateWorkerStatus(w,'OFF')}else addMsg(`<p>❌ Specify a worker to stop</p>`)}
+  else if(l.includes('status')){addMsg(`<p><strong>📊 Worker Status</strong></p><table style="width:100%;margin-top:10px;font-size:0.9em"><tr><td>🔍 Product Research</td><td style="color:#22c55e">● ON</td><td>3 tasks</td></tr><tr><td>📦 Catalog Opt</td><td style="color:#f59e0b">● IDLE</td><td>Waiting</td></tr><tr><td>🎨 Theme Designer</td><td style="color:#ef4444">● OFF</td><td>Not started</td></tr><tr><td>📢 Meta Ads</td><td style="color:#ef4444">● OFF</td><td>Not started</td></tr><tr><td>💰 Pricing</td><td style="color:#ef4444">● OFF</td><td>Not started</td></tr><tr><td>🔄 Inventory</td><td style="color:#ef4444">● OFF</td><td>Not started</td></tr><tr><td>📤 Orders</td><td style="color:#22c55e">● ON</td><td>Processing</td></tr><tr><td>📊 Analytics</td><td style="color:#22c55e">● ON</td><td>Collecting</td></tr></table>`)}
+  else if(l.includes('api')||l.includes('docs')){generateApis()}
+  else if(l.includes('workflow')||l.includes('flow')){const w=Object.keys(workflows).find(k=>l.includes(k))||'breed-glossary';showWorkflow(w)}
+  else{addMsg(`<p>🤖 Try these commands:</p><ul style="margin:8px 0;padding-left:20px"><li><code>start [worker]</code></li><li><code>stop [worker]</code></li><li><code>status</code></li><li><code>api docs</code></li><li><code>workflow [name]</code></li></ul>`)}
+}
+
+function findWorker(t){
+  const workers=['product-research','catalog-opt','theme','meta','pricing','inventory','orders','analytics'];
+  for(const w of workers)if(t.toLowerCase().includes(w.replace('-',' ')))return w;
+  return null;
+}
+
+function updateWorkerStatus(worker,status){
+  document.querySelectorAll('.worker-item').forEach(el=>{
+    if(el.dataset.w===worker){
+      const badge=el.querySelector('.worker-status');
+      badge.className='worker-status '+(status==='ON'?'status-online':status==='OFF'?'status-offline':'status-idle');
+      badge.textContent=status;
+    }
+  });
+}
+
+function showWorkflow(name){
+  const w=workflows[name]||workflows['breed-glossary'];
+  let h=`<p><strong>📋 Workflow: ${name.replace('-',' ').toUpperCase()}</strong></p>`;
+  w.forEach(s=>h+=`<div style="margin:8px 0;padding:10px;background:#0d0d1a;border-radius:8px;border-left:3px solid ${s.s==='✅'?'#22c55e':s.s==='🔄'?'#f59e0b':'#666'}"><strong>${s.n}</strong><br><span style="color:#666;font-size:0.85em">Worker: ${s.w} | ${s.s}</span></div>`);
+  addMsg(h);
+}
+
+function generateApis(){
+  const panel=document.getElementById('apiPanel');
+  if(!panel.classList.contains('open'))panel.classList.add('open');
+  refreshApiPanel();
+  addMsg(`<p>✅ <strong>API Documentation Generated!</strong></p><p>Based on your active workers, I've automatically generated the API endpoints you need. Check the panel on the right →</p><p style="margin-top:8px;color:#a5b4fc">Click any API endpoint to see details.</p>`);
+}
+
+function refreshApiPanel(){
+  const el=document.getElementById('apiEndpoints');
+  let h='';
+  Object.entries(workerData).forEach(([k,v])=>{
+    h+=`<div style="margin-bottom:15px"><h4 style="color:#a5b4fc;font-size:0.9em;margin-bottom:8px">${k.replace('-',' ').toUpperCase()}</h4>`;
+    v.apis.forEach(a=>h+=`<div class="endpoint-item"><span class="method-tag ${a.m.toLowerCase()}">${a.m}</span><code style="color:#818cf8">${a.path}</code><br><span style="color:#666;font-size:0.8em">${a.desc}</span></div>`);
+    h+='</div>';
+  });
+  el.innerHTML=h;
+}
+</script>
+</body>
+</html>

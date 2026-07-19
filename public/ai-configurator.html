@@ -1,0 +1,523 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ShoppDropp AI Agent Configurator</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { 
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; 
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      min-height: 100vh;
+      color: #333;
+    }
+    
+    .container { max-width: 1400px; margin: 0 auto; padding: 20px; }
+    
+    .header {
+      background: rgba(255,255,255,0.95);
+      backdrop-filter: blur(10px);
+      border-radius: 16px;
+      padding: 30px;
+      margin-bottom: 20px;
+      box-shadow: 0 10px 40px rgba(0,0,0,0.1);
+    }
+    .header h1 { font-size: 2.2em; background: linear-gradient(135deg, #667eea, #764ba2); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+    .header p { color: #666; margin-top: 10px; font-size: 1.1em; }
+    
+    .steps { display: flex; justify-content: space-between; margin: 30px 0; position: relative; }
+    .steps::before {
+      content: ''; position: absolute; top: 20px; left: 10%; right: 10%; height: 4px;
+      background: #e0e0e0; z-index: 0;
+    }
+    .step { 
+      display: flex; flex-direction: column; align-items: center; z-index: 1;
+      cursor: pointer;
+    }
+    .step-circle { 
+      width: 44px; height: 44px; border-radius: 50%; background: #e0e0e0;
+      display: flex; align-items: center; justify-content: center;
+      font-weight: bold; color: #666;
+    }
+    .step.active .step-circle { background: linear-gradient(135deg, #667eea, #764ba2); color: white; }
+    .step.completed .step-circle { background: #28a745; color: white; }
+    .step-label { margin-top: 8px; font-size: 0.85em; color: #666; }
+    .step.active .step-label { color: #667eea; }
+    
+    .content-grid { display: grid; grid-template-columns: 1fr 350px; gap: 20px; }
+    
+    .card {
+      background: white;
+      border-radius: 16px;
+      padding: 25px;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+      margin-bottom: 20px;
+    }
+    
+    .scan-results, .goal-selection, .worker-preview, .config-summary { display: none; }
+    .scan-results.active, .goal-selection.active, .worker-preview.active, .config-summary.active { display: block; }
+    
+    .store-header {
+      display: flex; align-items: center; gap: 20px;
+      padding: 20px; background: #f5f7fa;
+      border-radius: 12px; margin-bottom: 20px;
+    }
+    .store-icon { 
+      width: 60px; height: 60px; border-radius: 12px;
+      background: linear-gradient(135deg, #667eea, #764ba2);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1.8em;
+    }
+    
+    .stats-grid {
+      display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 15px; margin: 20px 0;
+    }
+    .stat-card {
+      background: #f8f9fa;
+      border-radius: 12px; padding: 20px; text-align: center;
+    }
+    .stat-value { font-size: 2em; font-weight: bold; color: #667eea; }
+    .stat-label { color: #666; font-size: 0.9em; }
+    
+    .collections-list { display: grid; gap: 10px; }
+    .collection-item {
+      display: flex; justify-content: space-between; align-items: center;
+      padding: 12px 16px; background: #f8f9fa; border-radius: 8px;
+      border-left: 4px solid #667eea;
+    }
+    .collection-count {
+      background: #667eea; color: white; padding: 4px 12px;
+      border-radius: 20px; font-size: 0.85em; font-weight: 600;
+    }
+    
+    .goals-grid {
+      display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      gap: 15px; margin-top: 20px;
+    }
+    .goal-card {
+      border: 2px solid #e0e0e0; border-radius: 12px; padding: 20px;
+      cursor: pointer; position: relative;
+    }
+    .goal-card:hover { border-color: #667eea; }
+    .goal-card.selected { border-color: #667eea; background: #f8f9ff; }
+    .goal-card.selected::after {
+      content: '✓'; position: absolute; top: 10px; right: 10px;
+      width: 24px; height: 24px; background: #667eea; color: white;
+      border-radius: 50%; display: flex; align-items: center;
+      justify-content: center;
+    }
+    .goal-icon { font-size: 2em; margin-bottom: 12px; }
+    .goal-title { font-weight: 600; margin-bottom: 8px; }
+    .goal-desc { color: #666; font-size: 0.9em; }
+    
+    .worker-grid { display: grid; gap: 12px; }
+    .worker-card {
+      display: flex; align-items: center; gap: 15px;
+      padding: 16px; background: #f8f9fa; border-radius: 12px;
+      border-left: 4px solid #ccc;
+    }
+    .worker-card.active { border-left-color: #4caf50; background: #f1f8e9; }
+    .worker-icon { font-size: 1.8em; }
+    .worker-info { flex: 1; }
+    .worker-name { font-weight: 600; }
+    .worker-desc { color: #666; font-size: 0.85em; }
+    .worker-status {
+      padding: 6px 14px; border-radius: 20px;
+      font-size: 0.8em; font-weight: 600;
+    }
+    .worker-status.enabled { background: #4caf50; color: white; }
+    
+    .sidebar-card { background: white; border-radius: 16px; padding: 20px; margin-bottom: 15px; }
+    .sidebar-title { font-weight: 600; margin-bottom: 15px; }
+    
+    .selected-goals-list { display: flex; flex-wrap: wrap; gap: 8px; }
+    .selected-goal {
+      background: #f0f4ff; color: #667eea;
+      padding: 8px 14px; border-radius: 20px; font-size: 0.85em;
+    }
+    
+    .worker-count-display { 
+      display: flex; align-items: center; gap: 15px;
+    }
+    .worker-count-number { 
+      width: 50px; height: 50px; border-radius: 50%;
+      background: linear-gradient(135deg, #667eea, #764ba2);
+      color: white; display: flex; align-items: center;
+      justify-content: center; font-size: 1.5em; font-weight: bold;
+    }
+    
+    .btn {
+      padding: 14px 32px; border-radius: 10px; font-size: 1em; font-weight: 600;
+      cursor: pointer; border: none;
+    }
+    .btn-secondary { background: #e0e0e0; color: #333; }
+    .btn-primary { 
+      background: linear-gradient(135deg, #667eea, #764ba2); 
+      color: white;
+    }
+    .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+    
+    .actions { display: flex; gap: 15px; margin-top: 30px; justify-content: flex-end; }
+    
+    .loading-overlay {
+      position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(255,255,255,0.95); z-index: 1000;
+      display: none; flex-direction: column; align-items: center;
+      justify-content: center;
+    }
+    .loading-overlay.active { display: flex; }
+    .spinner {
+      width: 60px; height: 60px; border: 4px solid #e0e0e0;
+      border-top-color: #667eea; border-radius: 50%;
+      animation: spin 1s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1>🤖 AI Agent Configurator</h1>
+      <p>Scan your store, select your goals, and let our AI workers build the perfect setup for you.</p>
+    </div>
+    
+    <div class="steps">
+      <div class="step active" data-step="1">
+        <div class="step-circle">1</div>
+        <span class="step-label">Scan</span>
+      </div>
+      <div class="step" data-step="2">
+        <div class="step-circle">2</div>
+        <span class="step-label">Goals</span>
+      </div>
+      <div class="step" data-step="3">
+        <div class="step-circle">3</div>
+        <span class="step-label">Workers</span>
+      </div>
+      <div class="step" data-step="4">
+        <div class="step-circle">4</div>
+        <span class="step-label">Launch</span>
+      </div>
+    </div>
+    
+    <div class="content-grid">
+      <div class="main-content">
+        <!-- STEP 1: Scan -->
+        <div class="scan-results active" id="scanStep">
+          <div class="card">
+            <div class="store-header">
+              <div class="store-icon">🏪</div>
+              <div>
+                <h2 id="storeName">Your Store</h2>
+                <p id="storeUrlText" style="color:#666">Enter URL to scan</p>
+              </div>
+            </div>
+            
+            <div class="stats-grid" id="statsGrid"></div>
+            
+            <h3 style="margin:20px 0 10px">📁 Collections</h3>
+            <div class="collections-list" id="collectionsList"></div>
+          </div>
+          
+          <div class="card">
+            <h3 style="margin-bottom:15px">🔍 Scan Store</h3>
+            <div style="display:flex;gap:10px">
+              <input type="url" id="storeUrl" placeholder="https://your-store.myshopify.com" 
+                style="flex:1;padding:14px;border:2px solid #e0e0e0;border-radius:10px;">
+              <button class="btn btn-primary" onclick="scanStore()">Scan</button>
+              <button class="btn btn-secondary" onclick="loadDemo()">Demo</button>
+            </div>
+          </div>
+          
+          <div class="actions">
+            <button class="btn btn-primary" id="btnStep1" onclick="goToStep(2)" disabled>Continue →</button>
+          </div>
+        </div>
+        
+        <!-- STEP 2: Goals -->
+        <div class="goal-selection" id="goalsStep">
+          <div class="card">
+            <h3 style="margin-bottom:10px">🎯 Select Your Goals</h3>
+            <p style="color:#666;margin-bottom:20px">Choose what you want to achieve</p>
+            
+            <div class="goals-grid" id="goalsGrid"></div>
+          </div>
+          
+          <div class="actions">
+            <button class="btn btn-secondary" onclick="goToStep(1)">← Back</button>
+            <button class="btn btn-primary" id="btnStep2" onclick="goToStep(3)" disabled>Continue →</button>
+          </div>
+        </div>
+        
+        <!-- STEP 3: Workers -->
+        <div class="worker-preview" id="workersStep">
+          <div class="card">
+            <h3 style="margin-bottom:10px">🤖 AI Workers Aligned</h3>
+            <p style="color:#666;margin-bottom:20px">Based on your goals, these workers will run:</p>
+            <div class="worker-grid" id="workerGrid"></div>
+          </div>
+          
+          <div class="actions">
+            <button class="btn btn-secondary" onclick="goToStep(2)">← Back</button>
+            <button class="btn btn-primary" onclick="goToStep(4)">Review →</button>
+          </div>
+        </div>
+        
+        <!-- STEP 4: Summary -->
+        <div class="config-summary" id="summaryStep">
+          <div class="card">
+            <h3 style="margin-bottom:20px">📋 Ready to Launch</h3>
+            <div id="summaryContent"></div>
+          </div>
+          
+          <div class="actions">
+            <button class="btn btn-secondary" onclick="goToStep(3)">← Back</button>
+            <button class="btn btn-primary" onclick="launchAgent()">🚀 Launch AI Agent</button>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Sidebar -->
+      <div class="sidebar">
+        <div class="sidebar-card">
+          <div class="sidebar-title">🎯 Selected Goals</div>
+          <div class="selected-goals-list" id="sidebarGoalsList">
+            <p style="color:#999;font-size:0.9em">No goals selected</p>
+          </div>
+        </div>
+        
+        <div class="sidebar-card">
+          <div class="sidebar-title">🤖 Active Workers</div>
+          <div class="worker-count-display">
+            <div class="worker-count-number" id="workerCount">0</div>
+            <div>
+              <div style="font-weight:600">of 8 workers</div>
+              <div style="font-size:0.85em;color:#666">will be active</div>
+            </div>
+          </div>
+        </div>
+        
+        <div class="sidebar-card">
+          <div class="sidebar-title">💰 Estimated Cost</div>
+          <div style="display:flex;justify-content:space-between;margin:8px 0">
+            <span>VPS</span><span>$6/mo</span>
+          </div>
+          <div style="display:flex;justify-content:space-between;margin:8px 0">
+            <span>Usage</span><span>$2-15/mo</span>
+          </div>
+          <div style="display:flex;justify-content:space-between;margin-top:10px;padding-top:10px;border-top:2px solid #e0e0e0;font-weight:600">
+            <span>Total</span><span>$8-21/mo</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  
+  <div class="loading-overlay" id="loading">
+    <div class="spinner"></div>
+    <p style="margin-top:20px">Scanning...</p>
+  </div>
+
+  <script>
+    let currentStep = 1;
+    let scanData = null;
+    let selectedGoals = new Set();
+    
+    const goalsData = {
+      conversions: { icon: '💰', title: 'Increase Conversions', desc: 'Turn visitors into buyers', workers: ['catalog-optimization', 'theme-design', 'pricing', 'analytics'] },
+      traffic: { icon: '📈', title: 'Drive Traffic', desc: 'More visitors to your store', workers: ['meta-ads', 'analytics', 'catalog-optimization'] },
+      seo: { icon: '🔍', title: 'Improve SEO', desc: 'Better search rankings', workers: ['catalog-optimization', 'analytics', 'theme-design'] },
+      catalog: { icon: '📦', title: 'Expand Catalog', desc: 'Find winning products', workers: ['product-research', 'catalog-optimization', 'inventory-sync', 'pricing'] },
+      design: { icon: '🎨', title: 'Refresh Design', desc: 'Modern UX & themes', workers: ['theme-design', 'catalog-optimization', 'analytics'] },
+      retention: { icon: '🔄', title: 'Boost Retention', desc: 'Keep customers coming back', workers: ['order-fulfillment', 'analytics', 'meta-ads'] },
+      automation: { icon: '⚡', title: 'Full Automation', desc: 'Hands-free operation', workers: ['inventory-sync', 'order-fulfillment', 'pricing', 'product-research'] },
+      ads: { icon: '📢', title: 'Scale Ads', desc: 'Meta Ads campaigns', workers: ['meta-ads', 'analytics', 'pricing'] },
+    };
+    
+    const allWorkers = {
+      'product-research': { name: 'Product Research', icon: '🔍', desc: 'Finds winning products from CJ Dropshipping' },
+      'catalog-optimization': { name: 'Catalog Optimization', icon: '📦', desc: 'Optimizes product SEO and descriptions' },
+      'theme-design': { name: 'Theme Designer', icon: '🎨', desc: 'Creates conversion-focused themes' },
+      'meta-ads': { name: 'Meta Ads Manager', icon: '📢', desc: 'Manages Facebook/Instagram campaigns' },
+      'pricing': { name: 'Pricing Optimizer', icon: '💰', desc: 'Dynamic pricing based on demand' },
+      'inventory-sync': { name: 'Inventory Sync', icon: '🔄', desc: 'Keeps stock levels synced' },
+      'order-fulfillment': { name: 'Order Fulfillment', icon: '📤', desc: 'Automates order processing' },
+      'analytics': { name: 'Analytics Engine', icon: '📊', desc: 'Tracks performance & suggests improvements' },
+    };
+    
+    function goToStep(step) {
+      if (step === 2 && !scanData) return alert('Scan a store first!');
+      if (step === 3 && selectedGoals.size === 0) return alert('Select at least one goal!');
+      
+      currentStep = step;
+      document.querySelectorAll('.step').forEach((el, i) => {
+        el.classList.remove('active', 'completed');
+        if (i + 1 < step) el.classList.add('completed');
+        if (i + 1 === step) el.classList.add('active');
+      });
+      
+      ['scanStep', 'goalsStep', 'workersStep', 'summaryStep'].forEach((id, i) => {
+        document.getElementById(id).classList.toggle('active', i + 1 === step);
+      });
+      
+      if (step === 2) renderGoals();
+      if (step === 3) renderWorkers();
+      if (step === 4) renderSummary();
+    }
+    
+    async function scanStore() {
+      const url = document.getElementById('storeUrl').value;
+      if (!url) return alert('Enter a URL');
+      
+      document.getElementById('loading').classList.add('active');
+      
+      try {
+        const res = await fetch('http://localhost:3001/api/ai-scanner/scan', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ userUrl: url, isCompetitor: false }),
+        });
+        
+        const data = await res.json();
+        if (data.success || data.plan) {
+          scanData = data.data || data.plan.scanResult;
+          displayScanResults();
+          document.getElementById('btnStep1').disabled = false;
+        }
+      } catch (e) {
+        alert('Scan failed: ' + e.message);
+      }
+      
+      document.getElementById('loading').classList.remove('active');
+    }
+    
+    function displayScanResults() {
+      document.getElementById('storeName').textContent = scanData.shopifyDomain || 'Your Store';
+      document.getElementById('storeUrlText').textContent = scanData.url;
+      
+      const allCollection = scanData.collections?.find(c => c.handle === 'all');
+      const productCount = allCollection?.productCount || scanData.products?.length || 0;
+      
+      document.getElementById('statsGrid').innerHTML = `
+        <div class="stat-card"><div class="stat-value">${productCount}</div><div class="stat-label">Products</div></div>
+        <div class="stat-card"><div class="stat-value">${scanData.collections?.length || 0}</div><div class="stat-label">Collections</div></div>
+        <div class="stat-card"><div class="stat-value">${scanData.pages?.length || 0}</div><div class="stat-label">Pages</div></div>
+        <div class="stat-card"><div class="stat-value">${scanData.apps?.length || 0}</div><div class="stat-label">Apps Detected</div></div>
+      `;
+      
+      document.getElementById('collectionsList').innerHTML = (scanData.collections || [])
+        .filter(c => c.handle !== 'all')
+        .slice(0, 8)
+        .map(c => `
+          <div class="collection-item">
+            <span>${c.title}</span>
+            ${c.productCount ? `<span class="collection-count">${c.productCount} products</span>` : ''}
+          </div>
+        `).join('');
+    }
+    
+    function renderGoals() {
+      document.getElementById('goalsGrid').innerHTML = Object.entries(goalsData).map(([key, g]) => `
+        <div class="goal-card ${selectedGoals.has(key) ? 'selected' : ''}" onclick="toggleGoal('${key}')">
+          <div class="goal-icon">${g.icon}</div>
+          <div class="goal-title">${g.title}</div>
+          <div class="goal-desc">${g.desc}</div>
+        </div>
+      `).join('');
+      
+      updateSidebar();
+    }
+    
+    function toggleGoal(key) {
+      if (selectedGoals.has(key)) selectedGoals.delete(key);
+      else selectedGoals.add(key);
+      
+      renderGoals();
+      document.getElementById('btnStep2').disabled = selectedGoals.size === 0;
+    }
+    
+    function renderWorkers() {
+      const activeWorkers = new Set();
+      selectedGoals.forEach(g => {
+        goalsData[g].workers.forEach(w => activeWorkers.add(w));
+      });
+      
+      document.getElementById('workerGrid').innerHTML = Object.entries(allWorkers).map(([key, w]) => {
+        const isActive = activeWorkers.has(key);
+        return `
+          <div class="worker-card ${isActive ? 'active' : ''}">
+            <div class="worker-icon">${w.icon}</div>
+            <div class="worker-info">
+              <div class="worker-name">${w.name}</div>
+              <div class="worker-desc">${w.desc}</div>
+            </div>
+            <span class="worker-status ${isActive ? 'enabled' : ''}">${isActive ? '✓ Active' : 'Idle'}</span>
+          </div>
+        `;
+      }).join('');
+      
+      document.getElementById('workerCount').textContent = activeWorkers.size;
+    }
+    
+    function renderSummary() {
+      const activeWorkers = new Set();
+      selectedGoals.forEach(g => {
+        goalsData[g].workers.forEach(w => activeWorkers.add(w));
+      });
+      
+      document.getElementById('summaryContent').innerHTML = `
+        <div style="margin-bottom:20px">
+          <strong>Store:</strong> ${scanData?.shopifyDomain || 'N/A'}<br>
+          <strong>Products:</strong> ${scanData?.collections?.find(c => c.handle === 'all')?.productCount || 'N/A'}
+        </div>
+        <div style="margin-bottom:20px">
+          <strong>Goals (${selectedGoals.size}):</strong><br>
+          ${Array.from(selectedGoals).map(g => `• ${goalsData[g].title}`).join('<br>')}
+        </div>
+        <div style="margin-bottom:20px">
+          <strong>Workers (${activeWorkers.size}/8):</strong><br>
+          ${Array.from(activeWorkers).map(w => `• ${allWorkers[w].name}`).join('<br>')}
+        </div>
+      `;
+    }
+    
+    function updateSidebar() {
+      document.getElementById('sidebarGoalsList').innerHTML = selectedGoals.size === 0 
+        ? '<p style="color:#999;font-size:0.9em">No goals selected</p>'
+        : Array.from(selectedGoals).map(g => `<span class="selected-goal">${goalsData[g].icon} ${goalsData[g].title}</span>`).join('');
+    }
+    
+    async function launchAgent() {
+      document.getElementById('loading').querySelector('p').textContent = 'Launching AI Agent...';
+      document.getElementById('loading').classList.add('active');
+      
+      // Simulate API call
+      setTimeout(() => {
+        document.getElementById('loading').classList.remove('active');
+        alert('🎉 Your AI Agent is now launching!\n\nYou\'ll receive updates via email/Slack as workers come online.');
+      }, 2000);
+    }
+    
+    function loadDemo() {
+      document.getElementById('storeUrl').value = 'https://happypuppysupply.myshopify.com';
+      scanData = {
+        url: 'https://happypuppysupply.myshopify.com',
+        shopifyDomain: 'happypuppysupply.com',
+        collections: [
+          { handle: 'dog-beds', title: 'Dog Beds & Mats', productCount: 21 },
+          { handle: 'treats', title: 'Dog Treats', productCount: 33 },
+          { handle: 'toys', title: 'Toys & Entertainment', productCount: 28 },
+          { handle: 'all', title: 'All Products', productCount: 165 },
+        ],
+        products: Array(165),
+        pages: [{ path: '/' }, { path: '/pages/about' }],
+        apps: ['Klaviyo', 'Judge.me'],
+      };
+      displayScanResults();
+      document.getElementById('btnStep1').disabled = false;
+    }
+  </script>
+</body>
+</html>

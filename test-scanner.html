@@ -1,0 +1,439 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ShoppDropp AI Store Scanner - Test</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #0a0a0f 0%, #1a1a2e 100%);
+            color: #fff;
+            min-height: 100vh;
+            padding: 40px 20px;
+        }
+        .container { max-width: 800px; margin: 0 auto; }
+        h1 {
+            text-align: center;
+            background: linear-gradient(135deg, #8b5cf6, #ec4899);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 10px;
+        }
+        .subtitle { text-align: center; color: #9ca3af; margin-bottom: 40px; }
+        
+        .step {
+            background: rgba(255,255,255,0.05);
+            border: 1px solid rgba(139,92,246,0.2);
+            border-radius: 16px;
+            padding: 30px;
+            margin-bottom: 20px;
+        }
+        .step-number {
+            display: inline-block;
+            width: 32px;
+            height: 32px;
+            background: linear-gradient(135deg, #8b5cf6, #ec4899);
+            border-radius: 50%;
+            text-align: center;
+            line-height: 32px;
+            margin-right: 10px;
+            font-weight: 600;
+        }
+        .step h2 { display: inline; font-size: 1.2rem; }
+        .step-content { margin-top: 20px; }
+        
+        input[type="url"], input[type="text"] {
+            width: 100%;
+            padding: 14px 18px;
+            background: rgba(0,0,0,0.3);
+            border: 1px solid rgba(139,92,246,0.3);
+            border-radius: 8px;
+            color: #fff;
+            font-size: 1rem;
+            margin-bottom: 10px;
+        }
+        input::placeholder { color: #6b7280; }
+        
+        button {
+            padding: 14px 28px;
+            background: linear-gradient(135deg, #8b5cf6, #ec4899);
+            color: #fff;
+            border: none;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            margin-top: 10px;
+        }
+        button:disabled { opacity: 0.5; cursor: not-allowed; }
+        button.secondary { background: #374151; }
+        
+        .loading {
+            display: none;
+            text-align: center;
+            color: #8b5cf6;
+            margin: 20px 0;
+        }
+        .loading.active { display: block; }
+        
+        .result {
+            background: rgba(34,197,94,0.1);
+            border: 1px solid rgba(34,197,94,0.3);
+            border-radius: 8px;
+            padding: 20px;
+            margin-top: 20px;
+            display: none;
+        }
+        .result.active { display: block; }
+        .result.error {
+            background: rgba(239,68,68,0.1);
+            border-color: rgba(239,68,68,0.3);
+        }
+        
+        pre {
+            background: rgba(0,0,0,0.3);
+            padding: 15px;
+            border-radius: 8px;
+            overflow-x: auto;
+            font-size: 0.85rem;
+            color: #c4b5fd;
+        }
+        
+        .api-url {
+            color: #9ca3af;
+            font-size: 0.85rem;
+            margin-bottom: 10px;
+        }
+        .api-url input {
+            background: transparent;
+            border: none;
+            color: #8b5cf6;
+            width: 300px;
+        }
+        
+        .hidden { display: none !important; }
+        
+        .plan-card {
+            background: rgba(255,255,255,0.03);
+            border-radius: 12px;
+            padding: 20px;
+            margin: 10px 0;
+        }
+        .plan-card h4 { color: #8b5cf6; margin-bottom: 10px; }
+        .plan-card ul { list-style: none; color: #9ca3af; }
+        .plan-card li { padding: 5px 0; }
+        .plan-card li:before {
+            content: "✓";
+            color: #22c55e;
+            margin-right: 8px;
+        }
+        
+        .pricing-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 15px;
+            margin-top: 20px;
+        }
+        .pricing-card {
+            background: rgba(255,255,255,0.03);
+            border-radius: 12px;
+            padding: 20px;
+            text-align: center;
+        }
+        .pricing-card h4 { margin-bottom: 10px; }
+        .pricing-card .price { font-size: 1.5rem; font-weight: 700; color: #22c55e; }
+        .pricing-card .sub { color: #6b7280; font-size: 0.85rem; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🤖 AI Store Scanner</h1>
+        <p class="subtitle">Test the full onboarding flow locally</p>
+        
+        <!-- API URL Config -->
+        <div class="step">
+            <div class="api-url">
+                Backend URL: <input type="text" id="apiUrl" value="http://localhost:3001" />
+            </div>
+        </div>
+
+        <!-- STEP 1: SCAN -->
+        <div class="step" id="step1">
+            <span class="step-number">1</span>
+            <h2>Enter Your Store URL</h2>
+            <div class="step-content">
+                <input type="url" id="userUrl" placeholder="https://your-store.myshopify.com" />
+                <p style="color: #6b7280; margin: 10px 0;">Competitor URLs (optional):</p>
+                <input type="url" id="comp1" placeholder="https://competitor-1.com" />
+                <input type="url" id="comp2" placeholder="https://competitor-2.com" />
+                <input type="url" id="comp3" placeholder="https://competitor-3.com" />
+                <button onclick="scanStore()">🔍 Analyze Store</button>
+                <div class="loading" id="scanLoading">Analyzing with AI...</div>
+                <div class="result" id="scanResult"></div>
+            </div>
+        </div>
+
+        <!-- STEP 2: VIEW PLAN -->
+        <div class="step hidden" id="step2">
+            <span class="step-number">2</span>
+            <h2>AI Plan Preview</h2>
+            <div class="step-content" id="planPreview">
+                <!-- Populated by JS -->
+            </div>
+            <button onclick="showFullPlan()">📋 View Full Plan</button>
+            <div class="result" id="fullPlanResult"></div>
+        </div>
+
+        <!-- STEP 3: SIGN UP -->
+        <div class="step hidden" id="step3">
+            <span class="step-number">3</span>
+            <h2>Sign Up to Deploy</h2>
+            <div class="step-content">
+                <p style="color: #9ca3af; margin-bottom: 15px;">Sign in with Google to provision your VPS and start workers.</p>
+                <button onclick="signUp()">🔐 Sign in with Google</button>
+                <div class="result" id="authResult"></div>
+            </div>
+        </div>
+
+        <!-- STEP 4: PROVISION -->
+        <div class="step hidden" id="step4">
+            <span class="step-number">4</span>
+            <h2>Provision VPS</h2>
+            <div class="step-content">
+                <input type="text" id="storeName" placeholder="My Store Name" />
+                <button onclick="provisionVPS()">🚀 Provision VPS</button>
+                <div class="loading" id="provisionLoading">Provisioning VPS on Hetzner...</div>
+                <div class="result" id="provisionResult"></div>
+            </div>
+        </div>
+
+        <!-- STEP 5: START WORKERS -->
+        <div class="step hidden" id="step5">
+            <span class="step-number">5</span>
+            <h2>Start AI Workers</h2>
+            <div class="step-content">
+                <button onclick="startWorkers()">⚡ Start Workers</button>
+                <div class="loading" id="workersLoading">Starting 8 AI workers...</div>
+                <div class="result" id="workersResult"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE = () => document.getElementById('apiUrl').value;
+        let scanData = null;
+        let authToken = localStorage.getItem('authToken') || '';
+        let storeId = null;
+
+        async function scanStore() {
+            const userUrl = document.getElementById('userUrl').value;
+            if (!userUrl) return alert('Enter your store URL');
+
+            const competitorUrls = [
+                document.getElementById('comp1').value,
+                document.getElementById('comp2').value,
+                document.getElementById('comp3').value,
+            ].filter(Boolean);
+
+            document.getElementById('scanLoading').classList.add('active');
+            document.getElementById('scanResult').classList.remove('active', 'error');
+
+            try {
+                const res = await fetch(`${API_BASE()}/api/ai-scanner/scan`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ userUrl, competitorUrls }),
+                });
+                const data = await res.json();
+                
+                scanData = data;
+                document.getElementById('scanLoading').classList.remove('active');
+                
+                if (data.success) {
+                    document.getElementById('scanResult').innerHTML = `
+                        <strong>✓ Analysis Complete!</strong><br>
+                        <p>Niche: ${data.preview.niche}</p>
+                        <p>Products Found: ${data.preview.productsFound}</p>
+                        <p>Target: ${data.preview.targetAudience}</p>
+                    `;
+                    document.getElementById('scanResult').classList.add('active');
+                    
+                    // Show plan preview
+                    document.getElementById('step2').classList.remove('hidden');
+                    document.getElementById('planPreview').innerHTML = `
+                        <div class="plan-card">
+                            <h4>🎯 ${data.preview.headline}</h4>
+                            <ul>
+                                ${data.preview.keyFindings.map(f => `<li>${f}</li>`).join('')}
+                            </ul>
+                        </div>
+                        <div class="plan-card">
+                            <h4>🛍️ Winning Products Preview</h4>
+                            <ul>
+                                ${data.preview.teaserProducts.map(p => `<li>${p.name} (${p.profitMargin} margin)</li>`).join('')}
+                            </ul>
+                        </div>
+                        <div class="pricing-grid">
+                            ${data.pricing.plans.map(p => `
+                                <div class="pricing-card">
+                                    <h4>${p.name}</h4>
+                                    <div class="price">${p.subscription}</div>
+                                    <div class="sub">+ ${p.infrastructure}</div>
+                                    <div class="sub">${p.stores} store${p.stores > 1 ? 's' : ''}</div>
+                                </div>
+                            `).join('')}
+                        </div>
+                    `;
+                    document.getElementById('step2').scrollIntoView({ behavior: 'smooth' });
+                } else {
+                    throw new Error(data.error);
+                }
+            } catch (err) {
+                document.getElementById('scanLoading').classList.remove('active');
+                document.getElementById('scanResult').innerHTML = `<strong>Error:</strong> ${err.message}`;
+                document.getElementById('scanResult').classList.add('active', 'error');
+            }
+        }
+
+        async function showFullPlan() {
+            if (!scanData?.scanId) return;
+            
+            try {
+                const res = await fetch(`${API_BASE()}/api/ai-scanner/plan/${scanData.scanId}`, {
+                    headers: authToken ? { 'Authorization': `Bearer ${authToken}` } : {},
+                });
+                const data = await res.json();
+                
+                document.getElementById('fullPlanResult').innerHTML = `<pre>${JSON.stringify(data, null, 2)}</pre>`;
+                document.getElementById('fullPlanResult').classList.add('active');
+                
+                if (!data.authenticated) {
+                    document.getElementById('step3').classList.remove('hidden');
+                    document.getElementById('step3').scrollIntoView({ behavior: 'smooth' });
+                } else {
+                    document.getElementById('step4').classList.remove('hidden');
+                    document.getElementById('step4').scrollIntoView({ behavior: 'smooth' });
+                }
+            } catch (err) {
+                alert('Error: ' + err.message);
+            }
+        }
+
+        function signUp() {
+            // For testing, simulate auth or use debug endpoint
+            const email = prompt('Enter test email (or use debug):');
+            if (!email) return;
+            
+            // Use debug endpoint to get token
+            fetch(`${API_BASE()}/api/debug/get-token?email=${email}`)
+                .then(r => r.json())
+                .then(data => {
+                    if (data.token) {
+                        authToken = data.token;
+                        localStorage.setItem('authToken', authToken);
+                        document.getElementById('authResult').innerHTML = `<strong>✓ Signed in as ${email}</strong>`;
+                        document.getElementById('authResult').classList.add('active');
+                        document.getElementById('step4').classList.remove('hidden');
+                        document.getElementById('step4').scrollIntoView({ behavior: 'smooth' });
+                    } else {
+                        // Try to create user first
+                        return fetch(`${API_BASE()}/api/debug/user/${email}`)
+                            .then(() => fetch(`${API_BASE()}/api/debug/get-token?email=${email}`))
+                            .then(r => r.json())
+                            .then(data2 => {
+                                authToken = data2.token;
+                                localStorage.setItem('authToken', authToken);
+                                document.getElementById('authResult').innerHTML = `<strong>✓ Signed in as ${email}</strong>`;
+                                document.getElementById('authResult').classList.add('active');
+                                document.getElementById('step4').classList.remove('hidden');
+                            });
+                    }
+                })
+                .catch(err => {
+                    document.getElementById('authResult').innerHTML = `<strong>Error:</strong> ${err.message}`;
+                    document.getElementById('authResult').classList.add('active', 'error');
+                });
+        }
+
+        async function provisionVPS() {
+            if (!scanData?.scanId) return alert('Scan a store first');
+            if (!authToken) return alert('Sign in first');
+
+            const storeName = document.getElementById('storeName').value;
+            document.getElementById('provisionLoading').classList.add('active');
+
+            try {
+                const res = await fetch(`${API_BASE()}/api/ai-scanner/provision`, {
+                    method: 'POST',
+                    headers: { 
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${authToken}`,
+                    },
+                    body: JSON.stringify({ scanId: scanData.scanId, storeName }),
+                });
+                const data = await res.json();
+                
+                document.getElementById('provisionLoading').classList.remove('active');
+                storeId = data.store?.id;
+                
+                document.getElementById('provisionResult').innerHTML = `
+                    <strong>✓ VPS Provisioning Started!</strong><br>
+                    <p>Store ID: ${data.store?.id}</p>
+                    <p>Plan: ${data.billing?.plan}</p>
+                    <p>Estimated Cost: ${data.billing?.estimatedTotal}</p>
+                    <pre>${JSON.stringify(data, null, 2)}</pre>
+                `;
+                document.getElementById('provisionResult').classList.add('active');
+                
+                document.getElementById('step5').classList.remove('hidden');
+                document.getElementById('step5').scrollIntoView({ behavior: 'smooth' });
+            } catch (err) {
+                document.getElementById('provisionLoading').classList.remove('active');
+                document.getElementById('provisionResult').innerHTML = `<strong>Error:</strong> ${err.message}`;
+                document.getElementById('provisionResult').classList.add('active', 'error');
+            }
+        }
+
+        async function startWorkers() {
+            if (!storeId) return alert('Provision VPS first');
+            if (!authToken) return alert('Sign in first');
+
+            document.getElementById('workersLoading').classList.add('active');
+
+            try {
+                const res = await fetch(`${API_BASE()}/api/ai-scanner/start-workers`, {
+                    method: 'POST',
+                    headers: { 
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${authToken}`,
+                    },
+                    body: JSON.stringify({ storeId }),
+                });
+                const data = await res.json();
+                
+                document.getElementById('workersLoading').classList.remove('active');
+                
+                document.getElementById('workersResult').innerHTML = `
+                    <strong>✓ Workers Started!</strong><br>
+                    <p>Store Status: ${data.store?.status}</p>
+                    <p>Dashboard: <a href="${data.dashboardUrl}" style="color: #8b5cf6;">${data.dashboardUrl}</a></p>
+                    <pre>${JSON.stringify(data, null, 2)}</pre>
+                `;
+                document.getElementById('workersResult').classList.add('active');
+            } catch (err) {
+                document.getElementById('workersLoading').classList.remove('active');
+                document.getElementById('workersResult').innerHTML = `<strong>Error:</strong> ${err.message}`;
+                document.getElementById('workersResult').classList.add('active', 'error');
+            }
+        }
+
+        // Check for existing auth
+        if (authToken) {
+            document.getElementById('step3').querySelector('button').textContent = '✓ Already Signed In';
+            document.getElementById('step3').querySelector('button').disabled = true;
+        }
+    </script>
+</body>
+</html>
