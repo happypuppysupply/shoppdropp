@@ -83,7 +83,7 @@ Validates:
 
 Validates:
 - Create, read, update, delete stores
-- Save/get API credentials (Shopify, Meta, AutoDS)
+- Save/get API credentials (Shopify, Meta, CJ Dropshipping)
 - Store listing
 
 **Time:** ~10 seconds
@@ -103,6 +103,7 @@ Validates:
 - GitHub token save/retrieve
 - Vercel token save/retrieve
 - Integration status endpoints
+- CJ Dropshipping credentials
 
 **Time:** ~3 seconds
 
@@ -162,7 +163,7 @@ Validates:
 Complete customer journey:
 1. User registration & login
 2. Store creation
-3. Integration setup (Shopify, Meta, AutoDS)
+3. Integration setup (Shopify, Meta, CJ Dropshipping)
 4. AI provider configuration
 5. Worker management
 6. Verification

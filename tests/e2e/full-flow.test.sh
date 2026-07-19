@@ -122,18 +122,18 @@ else
 fi
 
 echo ""
-echo "Step 3.3: Save AutoDS credentials"
-AUTODS_RESPONSE=$(curl -s -X POST "$API_URL/api/stores/$STORE_ID/credentials" \
+echo "Step 3.3: Save CJ Dropshipping credentials"
+CJ_RESPONSE=$(curl -s -X POST "$API_URL/api/stores/$STORE_ID/credentials" \
   -H "Authorization: Bearer $JWT_TOKEN" \
   -H "Content-Type: application/json" \
-  -d "{\"type\": \"autods\", \"data\": {\"apiKey\": \"ads_e2e_test\"}}" \
+  -d "{\"type\": \"cj\", \"data\": {\"apiKey\": \"cj_e2e_test\"}}" \
   -w "\n%{http_code}")
 
-HTTP_CODE=$(echo "$AUTODS_RESPONSE" | tail -n1)
+HTTP_CODE=$(echo "$CJ_RESPONSE" | tail -n1)
 if [ "$HTTP_CODE" == "200" ] || [ "$HTTP_CODE" == "201" ]; then
-  print_success "AutoDS credentials saved"
+  print_success "CJ Dropshipping credentials saved"
 else
-  print_warn "AutoDS credentials: HTTP $HTTP_CODE"
+  print_warn "CJ Dropshipping credentials: HTTP $HTTP_CODE"
 fi
 
 echo ""
@@ -226,7 +226,7 @@ echo ""
 echo "✅ Full customer journey validated:"
 echo "   1. User registration & login"
 echo "   2. Store creation"
-echo "   3. Integration setup (Shopify, Meta, AutoDS)"
+echo "   3. Integration setup (Shopify, Meta, CJ Dropshipping)"
 echo "   4. AI provider configuration"
 echo "   5. Worker management"
 echo "   6. Cleanup"
