@@ -3,7 +3,7 @@
 import { useEffect, useState, Suspense, useRef } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { motion } from "framer-motion";
-import { getSupabaseClient } from "@/lib/supabase-client";
+import { createClient } from "@/lib/supabase-client";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { Loader2, CheckCircle2, XCircle } from "lucide-react";
 
@@ -30,9 +30,9 @@ function AuthCallbackContent() {
   const supabaseRef = useRef<SupabaseClient | null>(null);
 
   useEffect(() => {
-    // Initialize Supabase client with shared cookie-based config
+    // Initialize Supabase client with implicit flow (no PKCE)
     try {
-      supabaseRef.current = getSupabaseClient();
+      supabaseRef.current = createClient();
     } catch (err) {
       setStatus("error");
       setMessage("Configuration error: Missing Supabase credentials");
@@ -85,48 +85,24 @@ function AuthCallbackContent() {
         }
       }
 
-      // Check for access_token in URL hash (implicit flow for OAuth)
-      // Google OAuth returns tokens in URL fragment, not query params
-      const hash = window.location.hash;
-      const hasAccessToken = hash.includes('access_token');
+      // For implicit flow, Supabase automatically handles tokens from URL hash
+      // Just wait a moment for the client to process, then check session
+      await new Promise(resolve => setTimeout(resolve, 500));
       
-      if (hasAccessToken) {
-        // Supabase client will automatically handle the token from URL
-        // Just check if user is now logged in
-        const { data: { user } } = await supabaseRef.current.auth.getUser();
-        
-        if (user) {
-          setStatus("success");
-          setMessage("Signed in! Redirecting to dashboard...");
-          setTimeout(() => router.push("/dashboard"), 1500);
-          return;
-        }
+      const { data: { user }, error: userError } = await supabaseRef.current.auth.getUser();
+      
+      if (user) {
+        setStatus("success");
+        setMessage("Signed in! Redirecting to dashboard...");
+        setTimeout(() => router.push("/dashboard"), 1500);
+        return;
       }
       
-      // Check for auth code (fallback for other providers)
-      const code = searchParams.get("code");
-      
-      if (code) {
-        try {
-          const { error: sessionError } = await supabaseRef.current.auth.exchangeCodeForSession(code);
-          
-          if (sessionError) {
-            setStatus("error");
-            setMessage(sessionError.message);
-            setTimeout(() => router.push("/"), 3000);
-            return;
-          }
-          
-          setStatus("success");
-          setMessage("Signed in! Redirecting to dashboard...");
-          setTimeout(() => router.push("/dashboard"), 1500);
-          return;
-        } catch (err) {
-          setStatus("error");
-          setMessage("Failed to complete sign in");
-          setTimeout(() => router.push("/"), 3000);
-          return;
-        }
+      if (userError) {
+        setStatus("error");
+        setMessage(userError.message);
+        setTimeout(() => router.push("/"), 3000);
+        return;
       }
 
       // If no token or code, just check if user is already logged in
