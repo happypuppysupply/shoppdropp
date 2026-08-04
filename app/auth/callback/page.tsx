@@ -85,25 +85,32 @@ function AuthCallbackContent() {
         }
       }
 
-      // Check for auth code (OAuth or magic link)
+      // Check for access_token in URL hash (implicit flow for OAuth)
+      // Google OAuth returns tokens in URL fragment, not query params
+      const hash = window.location.hash;
+      const hasAccessToken = hash.includes('access_token');
+      
+      if (hasAccessToken) {
+        // Supabase client will automatically handle the token from URL
+        // Just check if user is now logged in
+        const { data: { user } } = await supabaseRef.current.auth.getUser();
+        
+        if (user) {
+          setStatus("success");
+          setMessage("Signed in! Redirecting to dashboard...");
+          setTimeout(() => router.push("/dashboard"), 1500);
+          return;
+        }
+      }
+      
+      // Check for auth code (fallback for other providers)
       const code = searchParams.get("code");
       
       if (code) {
         try {
-          // Try to exchange code for session with PKCE
           const { error: sessionError } = await supabaseRef.current.auth.exchangeCodeForSession(code);
           
           if (sessionError) {
-            // If PKCE fails, check if user is already logged in (Google OAuth may have worked)
-            const { data: { user } } = await supabaseRef.current.auth.getUser();
-            
-            if (user) {
-              setStatus("success");
-              setMessage("Signed in! Redirecting to dashboard...");
-              setTimeout(() => router.push("/dashboard"), 1500);
-              return;
-            }
-            
             setStatus("error");
             setMessage(sessionError.message);
             setTimeout(() => router.push("/"), 3000);
@@ -115,16 +122,6 @@ function AuthCallbackContent() {
           setTimeout(() => router.push("/dashboard"), 1500);
           return;
         } catch (err) {
-          // Check if user is already logged in despite the error
-          const { data: { user } } = await supabaseRef.current.auth.getUser();
-          
-          if (user) {
-            setStatus("success");
-            setMessage("Signed in! Redirecting to dashboard...");
-            setTimeout(() => router.push("/dashboard"), 1500);
-            return;
-          }
-          
           setStatus("error");
           setMessage("Failed to complete sign in");
           setTimeout(() => router.push("/"), 3000);

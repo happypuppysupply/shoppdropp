@@ -131,6 +131,11 @@ export function AuthProvider({ children }: AuthProviderProps) {
       options: {
         redirectTo: `${window.location.origin}/auth/callback`,
         skipBrowserRedirect: false,
+        // Use implicit flow - no PKCE needed for Google
+        queryParams: {
+          access_type: 'online',
+          prompt: 'consent',
+        },
       },
     });
   }, []);

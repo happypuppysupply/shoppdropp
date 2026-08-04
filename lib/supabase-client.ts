@@ -32,10 +32,11 @@ const cookieStorage = {
 };
 
 // Shared configuration for cookie-based auth storage
-// This ensures PKCE code verifier persists across OAuth redirects
+// Using implicit flow for OAuth (no PKCE required for Google)
 export const createClient = (): SupabaseClient => {
   return createBrowserClient(supabaseUrl, supabaseKey, {
     auth: {
+      flowType: 'implicit',
       storage: cookieStorage,
       storageKey: "sb-auth-token",
       detectSessionInUrl: true,
