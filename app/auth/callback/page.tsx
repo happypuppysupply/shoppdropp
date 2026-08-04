@@ -90,9 +90,20 @@ function AuthCallbackContent() {
       
       if (code) {
         try {
+          // Try to exchange code for session with PKCE
           const { error: sessionError } = await supabaseRef.current.auth.exchangeCodeForSession(code);
           
           if (sessionError) {
+            // If PKCE fails, check if user is already logged in (Google OAuth may have worked)
+            const { data: { user } } = await supabaseRef.current.auth.getUser();
+            
+            if (user) {
+              setStatus("success");
+              setMessage("Signed in! Redirecting to dashboard...");
+              setTimeout(() => router.push("/dashboard"), 1500);
+              return;
+            }
+            
             setStatus("error");
             setMessage(sessionError.message);
             setTimeout(() => router.push("/"), 3000);
@@ -104,6 +115,16 @@ function AuthCallbackContent() {
           setTimeout(() => router.push("/dashboard"), 1500);
           return;
         } catch (err) {
+          // Check if user is already logged in despite the error
+          const { data: { user } } = await supabaseRef.current.auth.getUser();
+          
+          if (user) {
+            setStatus("success");
+            setMessage("Signed in! Redirecting to dashboard...");
+            setTimeout(() => router.push("/dashboard"), 1500);
+            return;
+          }
+          
           setStatus("error");
           setMessage("Failed to complete sign in");
           setTimeout(() => router.push("/"), 3000);

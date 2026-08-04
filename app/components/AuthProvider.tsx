@@ -130,6 +130,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
       provider: "google",
       options: {
         redirectTo: `${window.location.origin}/auth/callback`,
+        skipBrowserRedirect: false,
       },
     });
   }, []);

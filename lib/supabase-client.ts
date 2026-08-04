@@ -21,8 +21,9 @@ const cookieStorage = {
   setItem: (key: string, value: string): void => {
     if (typeof document === "undefined") return;
     // Set cookie with SameSite=Lax to allow it to persist through OAuth redirect
-    const secure = process.env.NODE_ENV === "production" ? "; Secure" : "";
-    document.cookie = `${key}=${encodeURIComponent(value)}; path=/; max-age=3600; SameSite=Lax${secure}`;
+    // Longer max-age (24 hours) to ensure it survives the OAuth flow
+    const secure = window.location.protocol === "https:" ? "; Secure" : "";
+    document.cookie = `${key}=${encodeURIComponent(value)}; path=/; max-age=86400; SameSite=Lax${secure}`;
   },
   removeItem: (key: string): void => {
     if (typeof document === "undefined") return;

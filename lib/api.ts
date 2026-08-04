@@ -1,9 +1,17 @@
+import { getSupabaseClient } from './supabase-client'
+
 // API client for ShoppDropp backend
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'
 
 export const api = {
   async getToken(): Promise<string | null> {
-    return localStorage.getItem('token')
+    try {
+      const supabase = getSupabaseClient()
+      const { data: { session } } = await supabase.auth.getSession()
+      return session?.access_token ?? null
+    } catch {
+      return null
+    }
   },
 
   async request(endpoint: string, options: RequestInit = {}) {
