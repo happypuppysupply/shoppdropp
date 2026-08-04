@@ -9,7 +9,7 @@ import {
   type ReactNode,
 } from "react";
 import type { User, AuthError, Session, SupabaseClient } from "@supabase/supabase-js";
-import { createClient as createSupabaseClient } from "@supabase/supabase-js";
+import { createBrowserClient } from "@supabase/ssr";
 
 interface AuthContextType {
   user: User | null;
@@ -28,7 +28,8 @@ interface AuthProviderProps {
   children: ReactNode;
 }
 
-// Lazy initialization of Supabase client with implicit flow (no PKCE)
+// Lazy initialization of Supabase client
+// @supabase/ssr handles PKCE code exchange automatically
 function getSupabaseClient(): SupabaseClient | null {
   if (typeof window === "undefined") return null;
   
@@ -40,14 +41,7 @@ function getSupabaseClient(): SupabaseClient | null {
     return null;
   }
   
-  return createSupabaseClient(url, key, {
-    auth: {
-      flowType: 'implicit',
-      autoRefreshToken: true,
-      persistSession: true,
-      detectSessionInUrl: true,
-    },
-  });
+  return createBrowserClient(url, key);
 }
 
 export function AuthProvider({ children }: AuthProviderProps) {

@@ -1,6 +1,6 @@
 "use client";
 
-import { createClient as createSupabaseClient } from "@supabase/supabase-js";
+import { createBrowserClient } from "@supabase/ssr";
 import type { SupabaseClient } from "@supabase/supabase-js";
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -10,17 +10,10 @@ if (!supabaseUrl || !supabaseKey) {
   throw new Error("Missing Supabase environment variables");
 }
 
-// Use standard Supabase client with implicit flow (no PKCE)
-// This is required for Google OAuth to work without PKCE
+// @supabase/ssr handles PKCE code exchange automatically
+// No custom storage needed - let it use localStorage by default
 export const createClient = (): SupabaseClient => {
-  return createSupabaseClient(supabaseUrl, supabaseKey, {
-    auth: {
-      flowType: 'implicit',
-      autoRefreshToken: true,
-      persistSession: true,
-      detectSessionInUrl: true,
-    },
-  });
+  return createBrowserClient(supabaseUrl, supabaseKey);
 };
 
 // Singleton instance for client-side use

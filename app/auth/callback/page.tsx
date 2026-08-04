@@ -85,42 +85,37 @@ function AuthCallbackContent() {
         }
       }
 
-      // For implicit flow, extract access_token from URL hash
-      const hash = window.location.hash;
-      const params = new URLSearchParams(hash.replace('#', ''));
-      const accessToken = params.get('access_token');
-      const refreshToken = params.get('refresh_token');
+      // Check for auth code (PKCE OAuth flow)
+      // @supabase/ssr automatically handles code exchange
+      const code = searchParams.get("code");
       
-      if (accessToken) {
-        // Set the session manually
-        const { error: sessionError } = await supabaseRef.current.auth.setSession({
-          access_token: accessToken,
-          refresh_token: refreshToken || '',
-        });
-        
-        if (sessionError) {
+      if (code) {
+        try {
+          // The client automatically exchanges the code
+          // Just wait and check if user is logged in
+          await new Promise(resolve => setTimeout(resolve, 1000));
+          
+          const { data: { user }, error: sessionError } = await supabaseRef.current.auth.getUser();
+          
+          if (sessionError) {
+            setStatus("error");
+            setMessage(sessionError.message);
+            setTimeout(() => router.push("/"), 3000);
+            return;
+          }
+          
+          if (user) {
+            setStatus("success");
+            setMessage("Signed in! Redirecting to dashboard...");
+            setTimeout(() => router.push("/dashboard"), 1500);
+            return;
+          }
+        } catch (err) {
           setStatus("error");
-          setMessage(sessionError.message);
+          setMessage("Failed to complete sign in");
           setTimeout(() => router.push("/"), 3000);
           return;
         }
-      }
-      
-      // Check if user is now logged in
-      const { data: { user }, error: userError } = await supabaseRef.current.auth.getUser();
-      
-      if (user) {
-        setStatus("success");
-        setMessage("Signed in! Redirecting to dashboard...");
-        setTimeout(() => router.push("/dashboard"), 1500);
-        return;
-      }
-      
-      if (userError) {
-        setStatus("error");
-        setMessage(userError.message);
-        setTimeout(() => router.push("/"), 3000);
-        return;
       }
 
       // No auth data, redirect home
