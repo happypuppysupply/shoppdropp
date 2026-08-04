@@ -85,10 +85,28 @@ function AuthCallbackContent() {
         }
       }
 
-      // For implicit flow, Supabase automatically handles tokens from URL hash
-      // Just wait a moment for the client to process, then check session
-      await new Promise(resolve => setTimeout(resolve, 500));
+      // For implicit flow, extract access_token from URL hash
+      const hash = window.location.hash;
+      const params = new URLSearchParams(hash.replace('#', ''));
+      const accessToken = params.get('access_token');
+      const refreshToken = params.get('refresh_token');
       
+      if (accessToken) {
+        // Set the session manually
+        const { error: sessionError } = await supabaseRef.current.auth.setSession({
+          access_token: accessToken,
+          refresh_token: refreshToken || '',
+        });
+        
+        if (sessionError) {
+          setStatus("error");
+          setMessage(sessionError.message);
+          setTimeout(() => router.push("/"), 3000);
+          return;
+        }
+      }
+      
+      // Check if user is now logged in
       const { data: { user }, error: userError } = await supabaseRef.current.auth.getUser();
       
       if (user) {
