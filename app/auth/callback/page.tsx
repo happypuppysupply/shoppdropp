@@ -105,17 +105,8 @@ function AuthCallbackContent() {
         return;
       }
 
-      // If no token or code, just check if user is already logged in
-      const { data: { user } } = await supabaseRef.current.auth.getUser();
-      
-      if (user) {
-        setStatus("success");
-        setMessage("Already signed in! Redirecting...");
-        setTimeout(() => router.push("/dashboard"), 1000);
-      } else {
-        // No auth data, redirect home
-        router.push("/");
-      }
+      // No auth data, redirect home
+      router.push("/");
     };
 
     handleAuthCallback();
