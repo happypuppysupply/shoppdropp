@@ -10,8 +10,7 @@ if (!supabaseUrl || !supabaseKey) {
   throw new Error("Missing Supabase environment variables");
 }
 
-// @supabase/ssr handles PKCE code exchange automatically
-// No custom storage needed - let it use localStorage by default
+// Let @supabase/ssr handle PKCE automatically - it manages the verifier cookie internally
 export const createClient = (): SupabaseClient => {
   return createBrowserClient(supabaseUrl, supabaseKey);
 };
