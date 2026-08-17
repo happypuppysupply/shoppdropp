@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react'
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Store, Plus, ExternalLink, Settings } from 'lucide-react'
-import { api } from '@/lib/api'
+import { stores as storesApi } from '@/lib/api'
 import { AddStoreModal } from '@/components/dashboard/AddStoreModal'
 import { StoreDetailsModal } from '@/components/dashboard/StoreDetailsModal'
 
@@ -29,8 +29,8 @@ export default function StoresPage() {
 
   async function loadStores() {
     try {
-      const data = await api.stores.list()
-      setStores(data)
+      const response = await storesApi.list()
+      setStores(response.data)
     } catch (error) {
       console.error('Failed to load stores:', error)
     } finally {
