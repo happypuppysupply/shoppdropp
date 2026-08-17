@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import { X, ShoppingBag, Loader2, ChevronRight, CheckCircle, ExternalLink } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import { api } from '@/lib/api'
+import { stores } from '@/lib/api'
 
 interface AutoDSConnectModalProps {
   storeId: string
@@ -23,7 +23,7 @@ export function AutoDSConnectModal({ storeId, onClose, onConnected }: AutoDSConn
     setLoading(true)
 
     try {
-      await api.stores.saveCredentials(storeId, 'autods', {
+      await stores.saveCredentials(storeId, 'autods', {
         api_key: apiKey,
       })
       setConnected(true)

@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import { X, MessageCircle, Loader2, ChevronRight, CheckCircle, ExternalLink } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import { api } from '@/lib/api'
+import { stores } from '@/lib/api'
 
 interface MetaAdsConnectModalProps {
   storeId: string
@@ -25,7 +25,7 @@ export function MetaAdsConnectModal({ storeId, onClose, onConnected }: MetaAdsCo
     setLoading(true)
 
     try {
-      await api.stores.saveCredentials(storeId, 'meta_ads', {
+      await stores.saveCredentials(storeId, 'meta_ads', {
         access_token: accessToken,
         account_id: accountId,
         pixel_id: pixelId || null,

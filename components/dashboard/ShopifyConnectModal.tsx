@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import { X, Store, Loader2, ChevronRight, CheckCircle, Copy, ExternalLink } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import { api } from '@/lib/api'
+import { stores } from '@/lib/api'
 
 interface ShopifyConnectModalProps {
   storeId: string
@@ -74,7 +74,7 @@ export function ShopifyConnectModal({ storeId, onClose, onConnected }: ShopifyCo
 
     try {
       // Save credentials
-      await api.stores.saveCredentials(storeId, 'shopify', {
+      await stores.saveCredentials(storeId, 'shopify', {
         store_url: storeUrl,
         api_token: apiToken,
       })
