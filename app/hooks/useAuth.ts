@@ -80,6 +80,7 @@ export function useAuth() {
     signInWithMagicLink,
     signInWithGoogle,
     signOut: context.logout,
+    logout: context.logout,
     login: context.login,
     register: context.register,
   };

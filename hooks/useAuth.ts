@@ -65,6 +65,7 @@ export function useAuth() {
     signUpWithEmail,
     signInWithMagicLink,
     signInWithGoogle,
+    signOut: context.logout,
     isLoading: context.loading,
     isAuthenticated: !!context.user,
   };
