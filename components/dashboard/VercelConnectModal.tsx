@@ -23,10 +23,7 @@ export function VercelConnectModal({ onClose, onConnected }: VercelConnectModalP
     setLoading(true)
 
     try {
-      await api.request('/user/vercel', {
-        method: 'POST',
-        body: JSON.stringify({ token, team_id: teamId || null }),
-      })
+      await api.post('/user/vercel', { token, team_id: teamId || null })
       setConnected(true)
       onConnected()
     } catch (err: any) {

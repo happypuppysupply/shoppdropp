@@ -23,10 +23,7 @@ export function GitHubConnectModal({ onClose, onConnected }: GitHubConnectModalP
     setLoading(true)
 
     try {
-      await api.request('/user/github', {
-        method: 'POST',
-        body: JSON.stringify({ token, username }),
-      })
+      await api.post('/user/github', { token, username })
       setConnected(true)
       onConnected()
     } catch (err: any) {
