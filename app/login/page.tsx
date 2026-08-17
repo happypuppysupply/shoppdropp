@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '@/components/auth/AuthProvider';
 import { getSupabaseClient } from '@/lib/supabase/client';
-import { ShoppingBag, Loader2, Chrome, Github } from 'lucide-react';
+import { ShoppingBag, Loader2, Globe, Code2 } from 'lucide-react';
 
 // Check if Supabase is configured at runtime
 const isSupabaseConfigured = typeof window !== 'undefined' && 
@@ -131,7 +131,7 @@ export default function LoginPage() {
                 {oauthLoading === 'google' ? (
                   <Loader2 className="w-5 h-5 animate-spin" />
                 ) : (
-                  <Chrome className="w-5 h-5" />
+                  <Globe className="w-5 h-5" />
                 )}
                 Continue with Google
               </button>
@@ -144,7 +144,7 @@ export default function LoginPage() {
                 {oauthLoading === 'github' ? (
                   <Loader2 className="w-5 h-5 animate-spin" />
                 ) : (
-                  <Github className="w-5 h-5" />
+                  <Code2 className="w-5 h-5" />
                 )}
                 Continue with GitHub
               </button>
