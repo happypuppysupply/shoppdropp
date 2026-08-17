@@ -57,17 +57,26 @@ export default function AIAgentPage() {
     loadContext()
   }, [])
 
+  async function getAuthToken(): Promise<string | null> {
+    // Try Supabase session first
+    const { data: { session } } = await supabase.auth.getSession()
+    if (session?.access_token) return session.access_token
+    
+    // Fallback to localStorage JWT (custom auth)
+    return localStorage.getItem('token')
+  }
+
   async function loadContext() {
     try {
-      const { data: { session } } = await supabase.auth.getSession()
-      if (!session) {
+      const token = await getAuthToken()
+      if (!token) {
         setLoadingContext(false)
         return
       }
 
       const response = await fetch(`${API_URL}/api/ai-chat/context`, {
         headers: {
-          'Authorization': `Bearer ${session.access_token}`,
+          'Authorization': `Bearer ${token}`,
         },
       })
 
@@ -94,8 +103,8 @@ export default function AIAgentPage() {
     setMessages(newMessages)
 
     try {
-      const { data: { session } } = await supabase.auth.getSession()
-      if (!session) {
+      const token = await getAuthToken()
+      if (!token) {
         setMessages([...newMessages, { 
           role: 'assistant', 
           content: 'Please sign in to use the AI assistant.' 
@@ -113,7 +122,7 @@ export default function AIAgentPage() {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${session.access_token}`,
+          'Authorization': `Bearer ${token}`,
         },
         body: JSON.stringify({
           message: userMessage,
