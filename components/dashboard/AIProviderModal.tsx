@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import { X, Brain, Loader2, AlertTriangle } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import { api } from '@/lib/api'
+import { ai } from '@/lib/api'
 
 const AI_PROVIDERS = [
   { 
@@ -75,7 +75,7 @@ export function AIProviderModal({ onClose, onConfigured }: AIProviderModalProps)
     setLoading(true)
 
     try {
-      await api.ai.configure(selectedProvider, selectedModel, apiKey)
+      await ai.configure(selectedProvider, selectedModel, apiKey)
       onConfigured()
       onClose()
     } catch (err: any) {

@@ -50,3 +50,11 @@ export const stripe = {
   getSubscription: () => 
     api.get('/stripe/subscription'),
 };
+
+// AI
+export const ai = {
+  configure: (provider: string, model: string, apiKey: string) =>
+    api.post('/ai/config', { provider, model, apiKey }),
+  getConfig: () =>
+    api.get('/ai/config'),
+};
