@@ -15,6 +15,7 @@ import {
 } from '@/components/ui/dropdown-menu'
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet'
 import { ShoppDroppLogo } from '@/components/Logo'
+import { StoreSidebar } from './StoreSidebar'
 import {
   LayoutDashboard,
   Store,
@@ -118,12 +119,19 @@ function Sidebar({ className }: { className?: string }) {
 
 export function AppShell({ children }: { children: React.ReactNode }) {
   const [mobileOpen, setMobileOpen] = useState(false)
+  const [selectedStore, setSelectedStore] = useState<string | null>(null)
 
   return (
     <div className="flex h-screen bg-[#050508]">
       {/* Desktop Sidebar */}
-      <aside className="hidden lg:block w-64 flex-shrink-0">
-        <Sidebar />
+      <aside className="hidden lg:flex">
+        <StoreSidebar 
+          selectedStore={selectedStore} 
+          onSelectStore={setSelectedStore} 
+        />
+        <div className="w-64 flex-shrink-0">
+          <Sidebar />
+        </div>
       </aside>
 
       {/* Mobile Sidebar */}

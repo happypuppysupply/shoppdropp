@@ -57,24 +57,34 @@ export default function AIAgentPage() {
   // Load context on mount
   useEffect(() => {
     loadContext()
-    checkOnboardingStatus()
   }, [])
+
+  // Check onboarding status after context loads
+  useEffect(() => {
+    if (context?.stores && context.stores.length > 0) {
+      checkOnboardingStatus()
+    }
+  }, [context])
 
   async function checkOnboardingStatus() {
     try {
       const token = await getAuthToken()
-      if (!token) return
+      if (!token || !context?.stores?.[0]?.id) return
 
-      const response = await fetch(`${API_URL}/api/onboarding/state/${context?.stores?.[0]?.id || ''}`, {
+      const response = await fetch(`${API_URL}/api/onboarding/state/${context.stores[0].id}`, {
         headers: { 'Authorization': `Bearer ${token}` },
       })
 
       if (response.ok) {
         const data = await response.json()
         setOnboardingComplete(data.isComplete)
+      } else {
+        // If onboarding state doesn't exist, mark as incomplete
+        setOnboardingComplete(false)
       }
     } catch (error) {
       console.error('Failed to check onboarding status:', error)
+      setOnboardingComplete(false)
     }
   }
 

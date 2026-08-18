@@ -231,20 +231,26 @@ export function StoreLayout({ children }: { children: React.ReactNode }) {
                     setSelectedStore('demo')
                     setSelectedPage('overview')
                   }}
-                  className="w-full p-3 rounded-xl bg-gradient-to-r from-violet-500/20 to-pink-500/20 border border-violet-500/30 hover:border-violet-500/50 transition-all"
+                  className={`w-full p-3 rounded-xl border transition-all duration-300 ${
+                    selectedStore === 'demo'
+                      ? 'bg-gradient-to-r from-violet-500/20 to-pink-500/20 border-violet-500/50 shadow-lg shadow-violet-500/10'
+                      : 'bg-white/5 border-white/10 hover:border-violet-500/30 hover:bg-white/10'
+                  }`}
                 >
                   <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-lg bg-violet-500/30 flex items-center justify-center">
-                      <Store className="w-5 h-5 text-violet-300" />
+                    <div className={`w-10 h-10 rounded-lg flex items-center justify-center transition-colors ${
+                      selectedStore === 'demo' ? 'bg-violet-500/30' : 'bg-white/10'
+                    }`}>
+                      <Store className={`w-5 h-5 ${selectedStore === 'demo' ? 'text-violet-300' : 'text-slate-400'}`} />
                     </div>
                     <div className="flex-1 text-left">
                       <div className="flex items-center gap-2">
-                        <p className="text-sm font-medium text-white">Demo Store</p>
+                        <p className={`text-sm font-medium ${selectedStore === 'demo' ? 'text-white' : 'text-slate-300'}`}>Demo Store</p>
                         <span className="px-1.5 py-0.5 rounded text-[10px] bg-violet-500/30 text-violet-300">DEMO</span>
                       </div>
                       <p className="text-xs text-slate-400">See how it works</p>
                     </div>
-                    <ChevronRight className="w-4 h-4 text-violet-400" />
+                    <ChevronRight className={`w-4 h-4 transition-colors ${selectedStore === 'demo' ? 'text-violet-400' : 'text-slate-500'}`} />
                   </div>
                 </button>
               </div>
@@ -269,16 +275,24 @@ export function StoreLayout({ children }: { children: React.ReactNode }) {
                         setSelectedStore(store.id)
                         setSelectedPage('overview')
                       }}
-                      className="w-full px-4 py-3 flex items-center gap-3 hover:bg-white/5 transition-colors border-l-2 border-transparent hover:border-violet-500"
+                      className={`w-full px-4 py-3 flex items-center gap-3 transition-all duration-300 border-l-2 ${
+                        selectedStore === store.id
+                          ? 'bg-violet-500/10 border-violet-500'
+                          : 'hover:bg-white/5 border-transparent hover:border-violet-500/50'
+                      }`}
                     >
-                      <div className="w-8 h-8 rounded-lg bg-violet-500/20 flex items-center justify-center flex-shrink-0">
-                        <Store className="w-4 h-4 text-violet-400" />
+                      <div className={`w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 transition-colors ${
+                        selectedStore === store.id ? 'bg-violet-500/30' : 'bg-violet-500/20'
+                      }`}>
+                        <Store className={`w-4 h-4 ${selectedStore === store.id ? 'text-violet-300' : 'text-violet-400'}`} />
                       </div>
                       <div className="flex-1 text-left min-w-0">
-                        <p className="text-sm font-medium text-white truncate">{store.name}</p>
+                        <p className={`text-sm font-medium truncate ${selectedStore === store.id ? 'text-white' : 'text-slate-300'}`}>{store.name}</p>
                         <p className="text-xs text-slate-500 truncate">{store.url.replace('https://', '')}</p>
                       </div>
-                      <ChevronRight className="w-4 h-4 text-slate-400 flex-shrink-0" />
+                      <ChevronRight className={`w-4 h-4 flex-shrink-0 transition-colors ${
+                        selectedStore === store.id ? 'text-violet-400' : 'text-slate-400'
+                      }`} />
                     </button>
                   ))
                 )}
