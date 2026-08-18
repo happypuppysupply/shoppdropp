@@ -29,6 +29,7 @@ import {
 import { supabase } from '@/lib/supabase'
 import { ActivityLog, type Activity } from '@/components/agent/ActivityLog'
 import { ChatMessage } from '@/components/agent/ChatMessage'
+import { CATEGORIES } from '@/lib/categories'
 
 interface Message {
   role: 'user' | 'assistant' | 'system'
@@ -56,18 +57,16 @@ export default function AIAgentPage() {
   const [messages, setMessages] = useState<Array<Message & { formData?: any }>>([
     { 
       role: 'assistant', 
-      content: 'ShoppDropp AI Agent ready. I can execute dropshipping tasks like product research, catalog sync, price optimization, and ad management.\n\nTo get started, I need to understand your store. What category will you be selling in?',
+      content: `ShoppDropp AI Agent ready. I can execute dropshipping tasks like product research, catalog sync, price optimization, and ad management.\n\nTo build your Facebook Ads effectively, I need to understand your store. Select your main product category:`,
       timestamp: new Date().toLocaleTimeString(),
       formData: {
         type: 'cards',
-        options: [
-          { id: 'pet_supplies', label: 'Pet Supplies', icon: '🐕', description: 'Food, toys, accessories' },
-          { id: 'home_garden', label: 'Home & Garden', icon: '🏠', description: 'Decor, furniture, gardening' },
-          { id: 'beauty', label: 'Beauty & Care', icon: '✨', description: 'Skincare, cosmetics, grooming' },
-          { id: 'electronics', label: 'Electronics', icon: '📱', description: 'Tech, gadgets, accessories' },
-          { id: 'fashion', label: 'Fashion', icon: '👕', description: 'Clothing, accessories, jewelry' },
-          { id: 'fitness', label: 'Fitness', icon: '💪', description: 'Equipment, supplements, apparel' },
-        ]
+        options: CATEGORIES.map(cat => ({
+          id: cat.id,
+          label: cat.label,
+          icon: cat.icon,
+          description: cat.description
+        }))
       }
     },
   ])
@@ -387,40 +386,41 @@ export default function AIAgentPage() {
           <CardContent className="flex-1 overflow-y-auto p-4 space-y-4">
             <AnimatePresence>
               {messages.map((msg, i) => (
-                <motion.div
+                <ChatMessage
                   key={i}
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  className="space-y-2"
-                >
-                  <div className={`flex gap-3 ${msg.role === 'user' ? 'flex-row-reverse' : ''}`}>
-                    <div
-                      className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 ${
-                        msg.role === 'user' ? 'bg-violet-500/20' : 'bg-gradient-to-br from-violet-500 to-pink-500'
-                      }`}
-                    >
-                      {msg.role === 'user' ? (
-                        <span className="text-xs text-violet-300">You</span>
-                      ) : (
-                        <Bot className="w-4 h-4 text-white" />
-                      )}
-                    </div>
-                    <div
-                      className={`max-w-[80%] p-3 rounded-lg whitespace-pre-wrap ${
-                        msg.role === 'user'
-                          ? 'bg-violet-500/20 text-white'
-                          : 'bg-white/5 text-slate-200'
-                      }`}
-                    >
-                      {msg.content}
-                    </div>
-                  </div>
-                  {msg.timestamp && (
-                    <div className={`text-[10px] text-slate-500 ${msg.role === 'user' ? 'text-right' : 'text-left'} px-11`}>
-                      {msg.timestamp}
-                    </div>
-                  )}
-                </motion.div>
+                  role={msg.role as 'user' | 'assistant'}
+                  content={msg.content}
+                  timestamp={msg.timestamp}
+                  formData={msg.formData}
+                  onFormSubmit={(value) => {
+                    // Add user response
+                    setMessages(prev => [...prev, {
+                      role: 'user',
+                      content: typeof value === 'string' ? value : value.join(', '),
+                      timestamp: new Date().toLocaleTimeString()
+                    }])
+                    
+                    // Find selected category and show subcategories
+                    const selectedCategory = CATEGORIES.find(c => c.id === value)
+                    if (selectedCategory) {
+                      setTimeout(() => {
+                        setMessages(prev => [...prev, {
+                          role: 'assistant',
+                          content: `Great! You selected ${selectedCategory.label}. Now choose your specific niche:`,
+                          timestamp: new Date().toLocaleTimeString(),
+                          formData: {
+                            type: 'cards',
+                            options: selectedCategory.subcategories.map(sub => ({
+                              id: sub.id,
+                              label: sub.label,
+                              description: sub.description
+                            }))
+                          }
+                        }])
+                      }, 500)
+                    }
+                  }}
+                />
               ))}
             </AnimatePresence>
             
