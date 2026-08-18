@@ -27,8 +27,8 @@ import {
   Clock
 } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
-import Link from 'next/link'
 import { ActivityLog, type Activity } from '@/components/agent/ActivityLog'
+import { ChatMessage } from '@/components/agent/ChatMessage'
 
 interface Message {
   role: 'user' | 'assistant' | 'system'
@@ -53,11 +53,22 @@ interface ContextData {
 
 export default function AIAgentPage() {
   const [input, setInput] = useState('')
-  const [messages, setMessages] = useState<Message[]>([
+  const [messages, setMessages] = useState<Array<Message & { formData?: any }>>([
     { 
       role: 'assistant', 
-      content: 'ShoppDropp AI Agent ready. I can execute dropshipping tasks like product research, catalog sync, price optimization, and ad management. What would you like me to do?',
-      timestamp: new Date().toLocaleTimeString()
+      content: 'ShoppDropp AI Agent ready. I can execute dropshipping tasks like product research, catalog sync, price optimization, and ad management.\n\nTo get started, I need to understand your store. What category will you be selling in?',
+      timestamp: new Date().toLocaleTimeString(),
+      formData: {
+        type: 'cards',
+        options: [
+          { id: 'pet_supplies', label: 'Pet Supplies', icon: '🐕', description: 'Food, toys, accessories' },
+          { id: 'home_garden', label: 'Home & Garden', icon: '🏠', description: 'Decor, furniture, gardening' },
+          { id: 'beauty', label: 'Beauty & Care', icon: '✨', description: 'Skincare, cosmetics, grooming' },
+          { id: 'electronics', label: 'Electronics', icon: '📱', description: 'Tech, gadgets, accessories' },
+          { id: 'fashion', label: 'Fashion', icon: '👕', description: 'Clothing, accessories, jewelry' },
+          { id: 'fitness', label: 'Fitness', icon: '💪', description: 'Equipment, supplements, apparel' },
+        ]
+      }
     },
   ])
   const [loading, setLoading] = useState(false)
@@ -299,8 +310,8 @@ export default function AIAgentPage() {
     <div className="h-[calc(100vh-4rem)] flex gap-6">
       {/* LEFT: Chat + Input */}
       <div className="flex-1 flex flex-col min-w-0">
-        {/* Onboarding Banner */}
-        {!onboardingComplete && context?.stores && context.stores.length > 0 && (
+        {/* Onboarding Banner - Triggers chat onboarding */}
+        {!onboardingComplete && context?.stores && context.stores.length > 0 && messages.length <= 1 && (
           <motion.div
             initial={{ opacity: 0, y: -20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -315,18 +326,20 @@ export default function AIAgentPage() {
                   <div>
                     <h3 className="text-white font-medium">Complete Store Setup</h3>
                     <p className="text-sm text-slate-300">
-                      6 steps • 3 minutes • Unlock AI automation tools
+                      Answer a few questions in chat to unlock AI automation
                     </p>
                   </div>
                 </div>
-                <Link
-                  href={`/app/onboarding?storeId=${context.stores[0].id}&storeName=${encodeURIComponent(context.stores[0].name)}`}
+                <Button 
+                  className="bg-violet-600 hover:bg-violet-500 text-white"
+                  onClick={() => {
+                    // Scroll to bottom to show the form
+                    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
+                  }}
                 >
-                  <Button className="bg-violet-600 hover:bg-violet-500 text-white">
-                    Start Setup
-                    <Sparkles className="w-4 h-4 ml-2" />
-                  </Button>
-                </Link>
+                  Start in Chat
+                  <Sparkles className="w-4 h-4 ml-2" />
+                </Button>
               </CardContent>
             </Card>
           </motion.div>
