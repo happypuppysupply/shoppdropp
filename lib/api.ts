@@ -58,3 +58,11 @@ export const ai = {
   getConfig: () =>
     api.get('/ai/config'),
 };
+
+// Onboarding
+export const onboarding = {
+  complete: (storeId: string, storeName: string, onboardingData: any) =>
+    api.post('/onboarding/complete', { storeId, storeName, onboardingData }),
+  getProfile: (storeId: string) =>
+    api.get(`/onboarding/profile/${storeId}`),
+};

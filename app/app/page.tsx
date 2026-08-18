@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
 import { supabase } from '@/lib/supabase'
 import { vps } from '@/lib/vps-api'
 import {
@@ -14,7 +15,10 @@ import {
   CheckCircle2,
   Clock,
   Store,
+  Rocket,
+  Sparkles,
 } from 'lucide-react'
+import Link from 'next/link'
 
 interface DashboardStats {
   revenue: number
@@ -41,6 +45,8 @@ export default function Dashboard() {
   const [activities, setActivities] = useState<Activity[]>([])
   const [loading, setLoading] = useState(true)
   const [vpsConnected, setVpsConnected] = useState(false)
+  const [onboardingComplete, setOnboardingComplete] = useState(true)
+  const [storeData, setStoreData] = useState<{id: string, name: string} | null>(null)
 
   useEffect(() => {
     loadDashboard()
@@ -54,6 +60,27 @@ export default function Dashboard() {
         setVpsConnected(true)
       } catch {
         setVpsConnected(false)
+      }
+
+      // Get store and check onboarding
+      const { data: stores } = await supabase.from('stores').select('id, name').limit(1)
+      if (stores && stores.length > 0) {
+        setStoreData(stores[0])
+        const token = localStorage.getItem('token')
+        if (token) {
+          const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://shoppdropp-api.onrender.com'
+          try {
+            const response = await fetch(`${API_URL}/api/onboarding/state/${stores[0].id}`, {
+              headers: { 'Authorization': `Bearer ${token}` },
+            })
+            if (response.ok) {
+              const data = await response.json()
+              setOnboardingComplete(data.isComplete)
+            }
+          } catch (e) {
+            console.error('Failed to check onboarding:', e)
+          }
+        }
       }
 
       // Load stats from Supabase
@@ -108,6 +135,33 @@ export default function Dashboard() {
           </span>
         </div>
       </div>
+
+      {/* Onboarding Banner */}
+      {!onboardingComplete && storeData && (
+        <Card className="bg-gradient-to-r from-violet-500/20 to-pink-500/20 border-violet-500/30">
+          <CardContent className="p-4 flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-full bg-violet-500/20 flex items-center justify-center">
+                <Rocket className="w-5 h-5 text-violet-400" />
+              </div>
+              <div>
+                <h3 className="text-white font-medium">Complete Store Setup</h3>
+                <p className="text-sm text-slate-300">
+                  6 steps • 3 minutes • Unlock AI automation tools
+                </p>
+              </div>
+            </div>
+            <Link
+              href={`/app/onboarding?storeId=${storeData.id}&storeName=${encodeURIComponent(storeData.name)}`}
+            >
+              <Button className="bg-violet-600 hover:bg-violet-500 text-white">
+                Start Setup
+                <Sparkles className="w-4 h-4 ml-2" />
+              </Button>
+            </Link>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Stats Grid */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">

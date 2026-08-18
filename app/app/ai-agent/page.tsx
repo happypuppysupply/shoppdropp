@@ -5,8 +5,9 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
-import { Bot, Send, Sparkles, Server, Store, AlertCircle, CheckCircle2, Loader2 } from 'lucide-react'
+import { Bot, Send, Sparkles, Server, Store, AlertCircle, CheckCircle2, Loader2, Rocket } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
+import Link from 'next/link'
 
 interface Message {
   role: 'user' | 'assistant' | 'system'
@@ -40,6 +41,7 @@ export default function AIAgentPage() {
   const [loading, setLoading] = useState(false)
   const [context, setContext] = useState<ContextData | null>(null)
   const [loadingContext, setLoadingContext] = useState(true)
+  const [onboardingComplete, setOnboardingComplete] = useState(true)
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://shoppdropp-api.onrender.com'
 
@@ -55,7 +57,26 @@ export default function AIAgentPage() {
   // Load context on mount
   useEffect(() => {
     loadContext()
+    checkOnboardingStatus()
   }, [])
+
+  async function checkOnboardingStatus() {
+    try {
+      const token = await getAuthToken()
+      if (!token) return
+
+      const response = await fetch(`${API_URL}/api/onboarding/state/${context?.stores?.[0]?.id || ''}`, {
+        headers: { 'Authorization': `Bearer ${token}` },
+      })
+
+      if (response.ok) {
+        const data = await response.json()
+        setOnboardingComplete(data.isComplete)
+      }
+    } catch (error) {
+      console.error('Failed to check onboarding status:', error)
+    }
+  }
 
   async function getAuthToken(): Promise<string | null> {
     // Try Supabase session first
@@ -185,6 +206,33 @@ export default function AIAgentPage() {
 
   return (
     <div className="space-y-6 h-[calc(100vh-8rem)]">
+      {/* Onboarding Banner */}
+      {!onboardingComplete && context?.stores && context.stores.length > 0 && (
+        <Card className="bg-gradient-to-r from-violet-500/20 to-pink-500/20 border-violet-500/30">
+          <CardContent className="p-4 flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-full bg-violet-500/20 flex items-center justify-center">
+                <Rocket className="w-5 h-5 text-violet-400" />
+              </div>
+              <div>
+                <h3 className="text-white font-medium">Complete Store Setup</h3>
+                <p className="text-sm text-slate-300">
+                  6 steps • 3 minutes • Unlock AI automation tools
+                </p>
+              </div>
+            </div>
+            <Link
+              href={`/app/onboarding?storeId=${context.stores[0].id}&storeName=${encodeURIComponent(context.stores[0].name)}`}
+            >
+              <Button className="bg-violet-600 hover:bg-violet-500 text-white">
+                Start Setup
+                <Sparkles className="w-4 h-4 ml-2" />
+              </Button>
+            </Link>
+          </CardContent>
+        </Card>
+      )}
+
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
