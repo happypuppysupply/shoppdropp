@@ -3,13 +3,15 @@ import {
   ShoppingBag, 
   Bot, 
   Zap, 
+  TrendingUp, 
+  Shield, 
+  Globe,
   ArrowRight,
   CheckCircle2,
   Store,
   Megaphone,
   Package,
-  BarChart3,
-  Sparkles
+  BarChart3
 } from 'lucide-react';
 
 export default function HomePage() {
@@ -94,30 +96,27 @@ export default function HomePage() {
   ];
 
   return (
-    <div className="min-h-screen bg-[#0a0a0f] text-white">
+    <div className="min-h-screen bg-gray-950">
       {/* Navigation */}
-      <nav className="border-b border-white/10 bg-[#0a0a0f]/80 backdrop-blur-lg sticky top-0 z-50">
+      <nav className="border-b border-gray-800">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16">
             <div className="flex items-center gap-3">
               <div className="p-2 bg-gradient-to-br from-violet-500 to-pink-500 rounded-lg">
                 <ShoppingBag className="w-6 h-6 text-white" />
               </div>
-              <span className="text-xl font-bold">
-                <span className="text-white">SHOPP</span>
-                <span className="text-pink-400">DROPP</span>
-              </span>
+              <span className="text-xl font-bold text-white">SHOPPDROPP</span>
             </div>
             <div className="flex items-center gap-4">
               <Link 
                 href="/login" 
-                className="text-slate-400 hover:text-white transition-colors"
+                className="text-gray-400 hover:text-white transition-colors"
               >
                 Sign In
               </Link>
               <Link 
                 href="/login"
-                className="px-4 py-2 bg-violet-600 hover:bg-violet-500 text-white rounded-lg transition-colors"
+                className="px-4 py-2 bg-violet-600 hover:bg-violet-700 text-white rounded-lg transition-colors"
               >
                 Get Started
               </Link>
@@ -132,7 +131,7 @@ export default function HomePage() {
         <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-20 pb-32">
           <div className="text-center max-w-4xl mx-auto">
             <div className="inline-flex items-center gap-2 px-4 py-2 bg-violet-500/10 border border-violet-500/20 rounded-full text-violet-300 text-sm mb-8">
-              <Sparkles className="w-4 h-4" />
+              <Zap className="w-4 h-4" />
               <span>Now with AI-powered automation</span>
             </div>
             <h1 className="text-5xl sm:text-6xl lg:text-7xl font-bold text-white mb-6 leading-tight">
@@ -141,21 +140,21 @@ export default function HomePage() {
                 on Autopilot
               </span>
             </h1>
-            <p className="text-xl text-slate-400 mb-10 max-w-2xl mx-auto">
+            <p className="text-xl text-gray-400 mb-10 max-w-2xl mx-auto">
               AI agents that handle product research, pricing, ads, and inventory. 
               Connect Shopify, Meta Ads, and AutoDS in minutes.
             </p>
             <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
               <Link 
                 href="/login"
-                className="w-full sm:w-auto px-8 py-4 bg-violet-600 hover:bg-violet-500 text-white rounded-xl font-semibold transition-colors flex items-center justify-center gap-2"
+                className="w-full sm:w-auto px-8 py-4 bg-violet-600 hover:bg-violet-700 text-white rounded-xl font-semibold transition-colors flex items-center justify-center gap-2"
               >
                 Start Free Trial
                 <ArrowRight className="w-5 h-5" />
               </Link>
               <a 
                 href="#features"
-                className="w-full sm:w-auto px-8 py-4 bg-white/5 hover:bg-white/10 text-white rounded-xl font-semibold transition-colors border border-white/10"
+                className="w-full sm:w-auto px-8 py-4 bg-gray-800 hover:bg-gray-700 text-white rounded-xl font-semibold transition-colors"
               >
                 See Features
               </a>
@@ -165,7 +164,7 @@ export default function HomePage() {
       </section>
 
       {/* Stats Section */}
-      <section className="border-y border-white/10 bg-white/[0.02]">
+      <section className="border-y border-gray-800 bg-gray-900/50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
             {[
@@ -176,7 +175,7 @@ export default function HomePage() {
             ].map((stat, i) => (
               <div key={i} className="text-center">
                 <div className="text-3xl sm:text-4xl font-bold text-white mb-1">{stat.value}</div>
-                <div className="text-slate-400">{stat.label}</div>
+                <div className="text-gray-400">{stat.label}</div>
               </div>
             ))}
           </div>
@@ -190,7 +189,7 @@ export default function HomePage() {
             <h2 className="text-3xl sm:text-4xl font-bold text-white mb-4">
               Everything You Need to Scale
             </h2>
-            <p className="text-slate-400 max-w-2xl mx-auto">
+            <p className="text-gray-400 max-w-2xl mx-auto">
               Powerful AI automation tools that work together to grow your business
             </p>
           </div>
@@ -198,13 +197,13 @@ export default function HomePage() {
             {features.map((feature, i) => (
               <div 
                 key={i}
-                className="p-6 bg-white/5 rounded-xl border border-white/10 hover:border-violet-500/30 transition-colors"
+                className="p-6 bg-gray-900 rounded-xl border border-gray-800 hover:border-gray-700 transition-colors"
               >
                 <div className="w-12 h-12 bg-violet-500/10 rounded-lg flex items-center justify-center text-violet-400 mb-4">
                   {feature.icon}
                 </div>
                 <h3 className="text-lg font-semibold text-white mb-2">{feature.title}</h3>
-                <p className="text-slate-400">{feature.description}</p>
+                <p className="text-gray-400">{feature.description}</p>
               </div>
             ))}
           </div>
@@ -212,7 +211,7 @@ export default function HomePage() {
       </section>
 
       {/* How It Works */}
-      <section className="py-24 bg-white/[0.02]">
+      <section className="py-24 bg-gray-900/30">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
             <h2 className="text-3xl sm:text-4xl font-bold text-white mb-4">
@@ -237,10 +236,10 @@ export default function HomePage() {
                 description: 'Your AI worker runs 24/7, optimizing pricing, ads, and inventory automatically.'
               }
             ].map((item, i) => (
-              <div key={i} className="relative p-6 bg-white/5 rounded-xl border border-white/10">
-                <div className="text-5xl font-bold text-violet-500/20 mb-4">{item.step}</div>
+              <div key={i} className="relative">
+                <div className="text-6xl font-bold text-gray-800 mb-4">{item.step}</div>
                 <h3 className="text-xl font-semibold text-white mb-2">{item.title}</h3>
-                <p className="text-slate-400">{item.description}</p>
+                <p className="text-gray-400">{item.description}</p>
               </div>
             ))}
           </div>
@@ -254,15 +253,15 @@ export default function HomePage() {
             <h2 className="text-3xl sm:text-4xl font-bold text-white mb-4">
               Connect Your Favorite Tools
             </h2>
-            <p className="text-slate-400 max-w-2xl mx-auto">
+            <p className="text-gray-400 max-w-2xl mx-auto">
               Seamless integrations with the platforms you already use
             </p>
           </div>
-          <div className="flex flex-wrap items-center justify-center gap-4">
+          <div className="flex flex-wrap items-center justify-center gap-8">
             {['Shopify', 'Meta Ads', 'AutoDS', 'OpenAI', 'GitHub', 'Vercel'].map((integration) => (
               <div 
                 key={integration}
-                className="px-6 py-3 bg-white/5 rounded-lg border border-white/10 text-slate-300 font-medium hover:border-violet-500/30 transition-colors"
+                className="px-6 py-3 bg-gray-900 rounded-lg border border-gray-800 text-gray-300 font-medium"
               >
                 {integration}
               </div>
@@ -272,13 +271,13 @@ export default function HomePage() {
       </section>
 
       {/* Pricing */}
-      <section className="py-24 bg-white/[0.02]">
+      <section className="py-24 bg-gray-900/30">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
             <h2 className="text-3xl sm:text-4xl font-bold text-white mb-4">
               Simple, Transparent Pricing
             </h2>
-            <p className="text-slate-400 max-w-2xl mx-auto">
+            <p className="text-gray-400 max-w-2xl mx-auto">
               Start free and scale as you grow. No hidden fees.
             </p>
           </div>
@@ -289,7 +288,7 @@ export default function HomePage() {
                 className={`p-6 rounded-xl border ${
                   plan.popular 
                     ? 'bg-violet-500/10 border-violet-500/30' 
-                    : 'bg-white/5 border-white/10'
+                    : 'bg-gray-900 border-gray-800'
                 }`}
               >
                 {plan.popular && (
@@ -300,23 +299,23 @@ export default function HomePage() {
                 <h3 className="text-lg font-semibold text-white mb-2">{plan.name}</h3>
                 <div className="flex items-baseline mb-2">
                   <span className="text-4xl font-bold text-white">{plan.price}</span>
-                  <span className="text-slate-400 ml-1">{plan.period}</span>
+                  <span className="text-gray-400 ml-1">{plan.period}</span>
                 </div>
-                <p className="text-slate-400 mb-6">{plan.description}</p>
+                <p className="text-gray-400 text-sm mb-6">{plan.description}</p>
                 <ul className="space-y-3 mb-6">
                   {plan.features.map((feature, j) => (
-                    <li key={j} className="flex items-center gap-2 text-slate-300">
-                      <CheckCircle2 className="w-4 h-4 text-violet-400" />
+                    <li key={j} className="flex items-center gap-2 text-gray-300">
+                      <CheckCircle2 className="w-5 h-5 text-violet-400" />
                       {feature}
                     </li>
                   ))}
                 </ul>
                 <Link
                   href="/login"
-                  className={`block w-full py-3 rounded-lg font-semibold text-center transition-colors ${
+                  className={`block w-full py-3 text-center rounded-lg font-semibold transition-colors ${
                     plan.popular
-                      ? 'bg-violet-600 hover:bg-violet-500 text-white'
-                      : 'bg-white/5 hover:bg-white/10 text-white border border-white/10'
+                      ? 'bg-violet-600 hover:bg-violet-700 text-white'
+                      : 'bg-gray-800 hover:bg-gray-700 text-white'
                   }`}
                 >
                   {plan.cta}
@@ -333,34 +332,37 @@ export default function HomePage() {
           <h2 className="text-3xl sm:text-4xl font-bold text-white mb-6">
             Ready to Automate Your Store?
           </h2>
-          <p className="text-slate-400 mb-8 max-w-2xl mx-auto">
-            Join thousands of store owners who use ShoppDropp to scale their business with AI.
+          <p className="text-gray-400 mb-8 max-w-2xl mx-auto">
+            Join thousands of Shopify merchants using AI to grow their business.
+            Start your free trial today.
           </p>
-          <Link
+          <Link 
             href="/login"
-            className="inline-flex items-center gap-2 px-8 py-4 bg-violet-600 hover:bg-violet-500 text-white rounded-xl font-semibold transition-colors"
+            className="inline-flex items-center gap-2 px-8 py-4 bg-violet-600 hover:bg-violet-700 text-white rounded-xl font-semibold transition-colors"
           >
-            Start Free Trial
+            Get Started Free
             <ArrowRight className="w-5 h-5" />
           </Link>
         </div>
       </section>
 
       {/* Footer */}
-      <footer className="border-t border-white/10 py-12 bg-[#0a0a0f]">
+      <footer className="border-t border-gray-800 py-12">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex flex-col md:flex-row items-center justify-between gap-4">
             <div className="flex items-center gap-3">
               <div className="p-2 bg-gradient-to-br from-violet-500 to-pink-500 rounded-lg">
                 <ShoppingBag className="w-5 h-5 text-white" />
               </div>
-              <span className="font-bold">
-                <span className="text-white">SHOPP</span>
-                <span className="text-pink-400">DROPP</span>
-              </span>
+              <span className="text-lg font-bold text-white">SHOPPDROPP</span>
             </div>
-            <div className="text-slate-400 text-sm">
-              © 2025 ShoppDropp. All rights reserved.
+            <p className="text-gray-500 text-sm">
+              © 2024 ShoppDropp. All rights reserved.
+            </p>
+            <div className="flex items-center gap-6">
+              <a href="#" className="text-gray-400 hover:text-white transition-colors">Privacy</a>
+              <a href="#" className="text-gray-400 hover:text-white transition-colors">Terms</a>
+              <a href="#" className="text-gray-400 hover:text-white transition-colors">Support</a>
             </div>
           </div>
         </div>
