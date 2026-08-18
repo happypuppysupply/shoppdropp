@@ -30,7 +30,7 @@ interface ChatMessageProps {
 }
 
 export function ChatMessage({ role, content, timestamp, formData, onFormSubmit }: ChatMessageProps) {
-  const [selectedValue, setSelectedValue] = useState<string | string[] | null>(null)
+  const [selectedValue, setSelectedValue] = useState<string | string[] | number | null>(null)
 
   const renderForm = () => {
     if (!formData) return null
