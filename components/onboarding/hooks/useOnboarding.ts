@@ -27,16 +27,19 @@ export function useOnboarding() {
 
   const updateNestedData = useCallback(<K extends keyof OnboardingData>(
     key: K,
-    nestedKey: keyof OnboardingData[K],
+    nestedKey: string,
     value: any
   ) => {
-    setData(prev => ({
-      ...prev,
-      [key]: {
-        ...prev[key],
-        [nestedKey]: value,
-      },
-    }))
+    setData(prev => {
+      const currentValue = prev[key] as Record<string, any>
+      return {
+        ...prev,
+        [key]: {
+          ...currentValue,
+          [nestedKey]: value,
+        },
+      }
+    })
   }, [])
 
   const toggleArrayItem = useCallback(<K extends keyof OnboardingData>(
