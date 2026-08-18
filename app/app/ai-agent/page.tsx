@@ -18,7 +18,7 @@ import {
   Rocket,
   Square,
   Terminal,
-  Activity,
+  Activity as ActivityIcon,
   Wrench,
   Globe,
   FileText,
@@ -460,7 +460,7 @@ export default function AIAgentPage() {
         <Card className="h-full bg-[#111118] border-white/10 flex flex-col">
           <CardHeader className="pb-3">
             <CardTitle className="text-sm text-slate-400 flex items-center gap-2">
-              <Activity className="w-4 h-4" />
+              <ActivityIcon className="w-4 h-4" />
               Activity Log
             </CardTitle>
           </CardHeader>
