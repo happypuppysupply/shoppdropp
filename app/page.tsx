@@ -15,6 +15,7 @@ import {
   Users,
   Clock
 } from "lucide-react";
+import Link from "next/link";
 import { ShoppDroppLogo, ShoppDroppText } from "./components/Logo";
 import { WaitlistForm } from "./components/WaitlistForm";
 import { AgentVisualization } from "./components/AgentVisualization";
@@ -123,13 +124,22 @@ export default function LandingPage() {
               <a href="#features" className="text-sm text-slate-400 hover:text-white transition-colors">Features</a>
               <a href="#how-it-works" className="text-sm text-slate-400 hover:text-white transition-colors">How It Works</a>
               <a href="#pricing" className="text-sm text-slate-400 hover:text-white transition-colors">Pricing</a>
+              <a href="#faq" className="text-sm text-slate-400 hover:text-white transition-colors">FAQ</a>
             </div>
-            <a
-              href="#waitlist"
-              className="px-4 py-2 rounded-lg bg-gradient-to-r from-violet-500 to-pink-500 text-white text-sm font-medium hover:opacity-90 transition-opacity"
-            >
-              Join Waitlist
-            </a>
+            <div className="flex items-center gap-4">
+              <Link
+                href="/login"
+                className="text-sm text-slate-400 hover:text-white transition-colors"
+              >
+                Sign In
+              </Link>
+              <Link
+                href="/login"
+                className="px-4 py-2 rounded-lg bg-gradient-to-r from-violet-500 to-pink-500 text-white text-sm font-medium hover:opacity-90 transition-opacity"
+              >
+                Get Started
+              </Link>
+            </div>
           </div>
         </div>
       </nav>
@@ -157,12 +167,12 @@ export default function LandingPage() {
                 and agencies.
               </p>
               <div className="flex flex-col sm:flex-row gap-4">
-                <a
-                  href="#waitlist"
+                <Link
+                  href="/login"
                   className="px-8 py-4 rounded-xl bg-gradient-to-r from-violet-500 to-pink-500 text-white font-semibold hover:opacity-90 transition-opacity flex items-center justify-center gap-2"
                 >
-                  Get Early Access <ArrowRight className="w-5 h-5" />
-                </a>
+                  Get Started <ArrowRight className="w-5 h-5" />
+                </Link>
                 <a
                   href="#how-it-works"
                   className="px-8 py-4 rounded-xl bg-white/5 border border-white/10 text-white font-semibold hover:bg-white/10 transition-colors flex items-center justify-center"
@@ -368,6 +378,60 @@ export default function LandingPage() {
         </div>
       </section>
 
+      {/* FAQ Section */}
+      <section id="faq" className="py-20 px-4 sm:px-6 lg:px-8 border-t border-white/5">
+        <div className="max-w-3xl mx-auto">
+          <div className="text-center mb-16">
+            <h2 className="text-3xl sm:text-4xl font-bold text-white mb-4">
+              Frequently Asked Questions
+            </h2>
+            <p className="text-slate-400">
+              Everything you need to know about ShoppDropp
+            </p>
+          </div>
+          <div className="space-y-4">
+            {[
+              {
+                q: "How does the AI agent work?",
+                a: "Our AI connects to your Shopify store and continuously optimizes your catalog. It rewrites product descriptions for SEO, adjusts pricing based on competition, syncs inventory with your suppliers, and organizes products into smart collections—all automatically."
+              },
+              {
+                q: "Do I need technical skills?",
+                a: "Not at all. ShoppDropp is designed for non-technical users. Just connect your store, set your preferences, and the AI handles the rest. You can review and approve changes or let it run fully autonomously."
+              },
+              {
+                q: "Which platforms do you support?",
+                a: "We currently support Shopify stores of all sizes. We integrate with AutoDS, CJ Dropshipping, and other major suppliers. Meta Ads integration is coming soon."
+              },
+              {
+                q: "Is my store data secure?",
+                a: "Absolutely. We use bank-level encryption, never store your passwords, and only request the minimum permissions needed. Your data is never shared or sold."
+              },
+              {
+                q: "Can I try it for free?",
+                a: "Yes! Our Pay-as-you-go plan is free forever for 1 store. You only pay when you're ready to scale. No credit card required to start."
+              },
+              {
+                q: "How do I get started?",
+                a: "Simply sign up, connect your Shopify store with one click, and configure your AI preferences. The onboarding takes less than 5 minutes, and your AI agent starts working immediately."
+              }
+            ].map((faq, index) => (
+              <motion.div
+                key={index}
+                initial={{ opacity: 0, y: 10 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                transition={{ delay: index * 0.05 }}
+                viewport={{ once: true }}
+                className="p-6 rounded-xl bg-white/5 border border-white/10 hover:border-white/20 transition-colors"
+              >
+                <h3 className="text-white font-semibold mb-2">{faq.q}</h3>
+                <p className="text-slate-400 text-sm leading-relaxed">{faq.a}</p>
+              </motion.div>
+            ))}
+          </div>
+        </div>
+      </section>
+
       {/* Testimonials */}
       <section className="py-20 px-4 sm:px-6 lg:px-8">
         <div className="max-w-7xl mx-auto">
@@ -402,7 +466,7 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* Waitlist CTA */}
+      {/* CTA Section */}
       <section id="waitlist" className="py-20 px-4 sm:px-6 lg:px-8">
         <div className="max-w-3xl mx-auto">
           <motion.div
@@ -416,13 +480,26 @@ export default function LandingPage() {
             
             <div className="relative">
               <h2 className="text-3xl sm:text-4xl font-bold text-white mb-4">
-                Get Early Access
+                Ready to Automate Your Store?
               </h2>
               <p className="text-slate-400 mb-8 max-w-lg mx-auto">
-                Join the private beta and be among the first to let AI manage your 
-                Shopify store. Limited spots available.
+                Join thousands of store owners who use ShoppDropp to scale their business with AI.
+                Start free, no credit card required.
               </p>
-              <WaitlistForm />
+              <div className="flex flex-col sm:flex-row gap-4 justify-center">
+                <Link
+                  href="/login"
+                  className="px-8 py-4 rounded-xl bg-gradient-to-r from-violet-500 to-pink-500 text-white font-semibold hover:opacity-90 transition-opacity flex items-center justify-center gap-2"
+                >
+                  Get Started Free <ArrowRight className="w-5 h-5" />
+                </Link>
+                <Link
+                  href="/login"
+                  className="px-8 py-4 rounded-xl bg-white/5 border border-white/10 text-white font-semibold hover:bg-white/10 transition-colors flex items-center justify-center"
+                >
+                  Sign In
+                </Link>
+              </div>
             </div>
           </motion.div>
         </div>
