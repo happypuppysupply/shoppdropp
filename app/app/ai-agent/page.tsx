@@ -29,12 +29,20 @@ import {
 import { supabase } from '@/lib/supabase'
 import { ActivityLog, type Activity } from '@/components/agent/ActivityLog'
 import { ChatMessage } from '@/components/agent/ChatMessage'
+import { InteractiveQuestion } from '@/components/agent/InteractiveQuestion'
 import { CATEGORIES } from '@/lib/categories'
 
 interface Message {
   role: 'user' | 'assistant' | 'system'
   content: string
   timestamp?: string
+  interactive?: {
+    type: 'multiselect' | 'select' | 'text'
+    question: string
+    options?: { id: string; label: string; description?: string }[]
+    allowMultiple?: boolean
+    placeholder?: string
+  }
 }
 
 interface ContextData {
@@ -78,6 +86,17 @@ export default function AIAgentPage() {
   const [totalToolsUsed, setTotalToolsUsed] = useState(0)
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://shoppdropp-api.onrender.com'
+
+  // Animated thinking dots component
+  function ThinkingDots() {
+  return (
+    <div className="flex items-center gap-1 px-1">
+      <div className="w-2 h-2 rounded-full bg-pink-400 animate-bounce" style={{ animationDelay: '0ms' }} />
+      <div className="w-2 h-2 rounded-full bg-pink-400 animate-bounce" style={{ animationDelay: '150ms' }} />
+      <div className="w-2 h-2 rounded-full bg-pink-400 animate-bounce" style={{ animationDelay: '300ms' }} />
+    </div>
+  )
+}
 
   // Scroll to bottom of messages
   const scrollToBottom = () => {
@@ -288,6 +307,70 @@ export default function AIAgentPage() {
     }
   }
 
+  // Process interactive question selection
+  const processSelection = async (selectionMessage: string) => {
+    setLoading(true)
+    
+    try {
+      const token = await getAuthToken()
+      if (!token) {
+        setMessages(prev => [...prev, {
+          role: 'assistant',
+          content: 'Please sign in to continue.',
+          timestamp: new Date().toLocaleTimeString()
+        }])
+        setLoading(false)
+        return
+      }
+
+      const conversationHistory = messages
+        .filter(m => m.role === 'user' || m.role === 'assistant')
+        .slice(-10)
+        .map(m => ({ role: m.role, content: m.content }))
+
+      const response = await fetch(`${API_URL}/api/ai-chat/chat`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          message: selectionMessage,
+          conversation_history: conversationHistory,
+        }),
+      })
+
+      if (!response.ok) {
+        const error = await response.json()
+        throw new Error(error.error || 'Failed to get response')
+      }
+
+      const data = await response.json()
+
+      const assistantMessage: Message = {
+        role: 'assistant',
+        content: data.response,
+        timestamp: new Date().toLocaleTimeString()
+      }
+
+      setMessages(prev => [...prev, assistantMessage])
+
+      if (data.command_executed) {
+        simulateActivity('Executing command: ' + data.command_executed.status)
+        loadContext()
+      }
+    } catch (error: any) {
+      console.error('Selection processing error:', error)
+      setMessages(prev => [...prev, {
+        role: 'assistant',
+        content: `Error: ${error.message || 'Something went wrong. Please try again.'}`,
+        timestamp: new Date().toLocaleTimeString()
+      }])
+    } finally {
+      setLoading(false)
+    }
+  }
+
   const stopAgent = () => {
     setLoading(false)
     setActivities(prev => prev.map(a => 
@@ -386,53 +469,83 @@ export default function AIAgentPage() {
           <CardContent className="flex-1 overflow-y-auto p-4 space-y-4">
             <AnimatePresence>
               {messages.map((msg, i) => (
-                <ChatMessage
-                  key={i}
-                  role={msg.role as 'user' | 'assistant'}
-                  content={msg.content}
-                  timestamp={msg.timestamp}
-                  formData={msg.formData}
-                  onFormSubmit={(value) => {
-                    // Add user response
-                    setMessages(prev => [...prev, {
-                      role: 'user',
-                      content: typeof value === 'string' ? value : value.join(', '),
-                      timestamp: new Date().toLocaleTimeString()
-                    }])
-                    
-                    // Find selected category and show subcategories
-                    const selectedCategory = CATEGORIES.find(c => c.id === value)
-                    if (selectedCategory) {
-                      setTimeout(() => {
-                        setMessages(prev => [...prev, {
-                          role: 'assistant',
-                          content: `Great! You selected ${selectedCategory.label}. Now choose your specific niche:`,
-                          timestamp: new Date().toLocaleTimeString(),
-                          formData: {
-                            type: 'cards',
-                            options: selectedCategory.subcategories.map(sub => ({
-                              id: sub.id,
-                              label: sub.label,
-                              description: sub.description
-                            }))
-                          }
-                        }])
-                      }, 500)
-                    }
-                  }}
-                />
+                <div key={i} className="space-y-2">
+                  <ChatMessage
+                    role={msg.role as 'user' | 'assistant'}
+                    content={msg.content}
+                    timestamp={msg.timestamp}
+                    formData={(msg as any).formData}
+                    onFormSubmit={(value) => {
+                      // Add user response
+                      setMessages(prev => [...prev, {
+                        role: 'user',
+                        content: typeof value === 'string' ? value : value.join(', '),
+                        timestamp: new Date().toLocaleTimeString()
+                      }])
+                      
+                      // Find selected category and show subcategories
+                      const selectedCategory = CATEGORIES.find(c => c.id === value)
+                      if (selectedCategory) {
+                        setTimeout(() => {
+                          setMessages(prev => [...prev, {
+                            role: 'assistant',
+                            content: `Great! You selected ${selectedCategory.label}. Now choose your specific niche:`,
+                            timestamp: new Date().toLocaleTimeString(),
+                            formData: {
+                              type: 'cards',
+                              options: selectedCategory.subcategories.map(sub => ({
+                                id: sub.id,
+                                label: sub.label,
+                                description: sub.description
+                              }))
+                            }
+                          }])
+                        }, 500)
+                      }
+                    }}
+                  />
+                  
+                  {/* Interactive question component */}
+                  {msg.interactive && msg.role === 'assistant' && (
+                    <div className="flex gap-3">
+                      <div className="w-8" />
+                      <div className="max-w-[80%] flex-1">
+                        <InteractiveQuestion
+                          question={msg.interactive.question}
+                          options={msg.interactive.options || []}
+                          allowMultiple={msg.interactive.allowMultiple || msg.interactive.type === 'multiselect'}
+                          onSubmit={(selected) => {
+                            const selectedText = Array.isArray(selected)
+                              ? selected.join(', ')
+                              : selected
+                            // Send the selection as a user message
+                            const selectionMessage = `Selected: ${selectedText}`
+                            setMessages(prev => [...prev, {
+                              role: 'user',
+                              content: selectionMessage,
+                              timestamp: new Date().toLocaleTimeString()
+                            }])
+                            // Process the selection through the API
+                            processSelection(selectionMessage)
+                          }}
+                        />
+                      </div>
+                    </div>
+                  )}
+                </div>
               ))}
             </AnimatePresence>
             
+            {/* Thinking indicator - shows when AI is processing */}
             {loading && (
-              <motion.div
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                className="flex items-center gap-2 text-slate-400 text-sm"
-              >
-                <Loader2 className="w-4 h-4 animate-spin" />
-                Agent is thinking...
-              </motion.div>
+              <div className="flex gap-3">
+                <div className="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 bg-gradient-to-br from-violet-500 to-pink-500">
+                  <Bot className="w-4 h-4 text-white" />
+                </div>
+                <div className="max-w-[80%] p-3 rounded-lg bg-white/5 text-slate-200 flex items-center">
+                  <ThinkingDots />
+                </div>
+              </div>
             )}
             
             <div ref={messagesEndRef} />

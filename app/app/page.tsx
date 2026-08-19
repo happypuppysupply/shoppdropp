@@ -1,376 +1,345 @@
 'use client'
 
-import { useEffect, useState } from 'react'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Badge } from '@/components/ui/badge'
+import { useState, useEffect } from 'react'
+import { Store, Sparkles, TrendingUp, Eye, MousePointer, DollarSign, CheckCircle, AlertCircle, Bot } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import { Badge } from '@/components/ui/badge'
+import { StoreIntegrations } from '@/components/dashboard/StoreIntegrations'
 import { supabase } from '@/lib/supabase'
-import { vps } from '@/lib/vps-api'
-import {
-  DollarSign,
-  Package,
-  ShoppingCart,
-  TrendingUp,
-  AlertCircle,
-  CheckCircle2,
-  Clock,
-  Store,
-  Rocket,
-  Sparkles,
-} from 'lucide-react'
 import Link from 'next/link'
 
-interface DashboardStats {
-  revenue: number
-  orders: number
-  products: number
-  conversion: number
+interface StoreData {
+  id: string
+  name: string
+  url: string
+  status: string
+  worker_id: string | null
 }
 
-interface Activity {
-  id: string
-  type: 'order' | 'product' | 'ad' | 'system'
-  message: string
-  time: string
-  status: 'success' | 'pending' | 'error'
+interface IntegrationsState {
+  shopify: { connected: boolean; store?: string }
+  meta_ads: { connected: boolean; account?: string }
+  cj_dropshipping: { connected: boolean; apiKey?: string }
+  ai: { connected: boolean; provider?: string; model?: string }
+  github: { connected: boolean; user?: string }
+  vercel: { connected: boolean; team?: string }
 }
 
 export default function Dashboard() {
-  const [stats, setStats] = useState<DashboardStats>({
-    revenue: 0,
-    orders: 0,
-    products: 0,
-    conversion: 0,
+  const [store, setStore] = useState<StoreData | null>(null)
+  const [integrations, setIntegrations] = useState<IntegrationsState>({
+    shopify: { connected: false },
+    meta_ads: { connected: false },
+    cj_dropshipping: { connected: false },
+    ai: { connected: false },
+    github: { connected: false },
+    vercel: { connected: false },
   })
-  const [activities, setActivities] = useState<Activity[]>([])
   const [loading, setLoading] = useState(true)
-  const [vpsConnected, setVpsConnected] = useState(false)
-  const [onboardingComplete, setOnboardingComplete] = useState(true)
-  const [storeData, setStoreData] = useState<{id: string, name: string} | null>(null)
+  const [activeModal, setActiveModal] = useState<string | null>(null)
 
   useEffect(() => {
-    loadDashboard()
+    loadStoreAndIntegrations()
   }, [])
 
-  async function loadDashboard() {
+  async function loadStoreAndIntegrations() {
     try {
-      // Check VPS connection
-      try {
-        await vps.health()
-        setVpsConnected(true)
-      } catch {
-        setVpsConnected(false)
-      }
-
-      // Get store and check onboarding
-      const { data: stores } = await supabase.from('stores').select('id, name').limit(1)
+      // Get first store
+      const { data: stores } = await supabase.from('stores').select('*').limit(1)
+      
       if (stores && stores.length > 0) {
-        setStoreData(stores[0])
-        const token = localStorage.getItem('token')
-        if (token) {
-          const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://shoppdropp-api.onrender.com'
-          try {
-            const response = await fetch(`${API_URL}/api/onboarding/state/${stores[0].id}`, {
-              headers: { 'Authorization': `Bearer ${token}` },
-            })
-            if (response.ok) {
-              const data = await response.json()
-              setOnboardingComplete(data.isComplete)
-            }
-          } catch (e) {
-            console.error('Failed to check onboarding:', e)
-          }
-        }
+        setStore(stores[0])
+        await loadIntegrations(stores[0].id)
       }
-
-      // Load stats from Supabase
-      const { data: orders } = await supabase.from('orders').select('total').eq('status', 'completed')
-      const { data: products } = await supabase.from('products').select('id')
-      const { data: allOrders } = await supabase.from('orders').select('id')
-
-      const revenue = orders?.reduce((sum, o) => sum + (o.total || 0), 0) || 0
-
-      setStats({
-        revenue,
-        orders: allOrders?.length || 0,
-        products: products?.length || 0,
-        conversion: revenue > 0 ? Math.round((orders?.length || 0) / (allOrders?.length || 1) * 100) : 0,
-      })
-
-      // Load recent activity
-      const { data: activityData } = await supabase
-        .from('activity_log')
-        .select('*')
-        .order('created_at', { ascending: false })
-        .limit(10)
-
-      setActivities(
-        activityData?.map((a) => ({
-          id: a.id,
-          type: a.type,
-          message: a.message,
-          time: new Date(a.created_at).toLocaleTimeString(),
-          status: a.status,
-        })) || []
-      )
     } catch (error) {
-      console.error('Dashboard load error:', error)
+      console.error('Failed to load store:', error)
     } finally {
       setLoading(false)
     }
   }
 
-  return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div>
-          <h1 className="text-2xl md:text-3xl font-bold text-white">Dashboard</h1>
-          <p className="text-slate-400 mt-1">Overview of your dropshipping business</p>
-        </div>
-        <div className="flex items-center gap-2">
-          <div className={`w-2 h-2 rounded-full ${vpsConnected ? 'bg-green-500' : 'bg-red-500'}`} />
-          <span className="text-sm text-slate-400">
-            VPS {vpsConnected ? 'Connected' : 'Offline'}
-          </span>
-        </div>
-      </div>
+  async function loadIntegrations(storeId: string) {
+    try {
+      // Check for Happy Puppy store (demo data)
+      const { data: storeData } = await supabase.from('stores').select('name').eq('id', storeId).single()
+      
+      if (storeData?.name === 'Happy Puppy Supply') {
+        setIntegrations({
+          shopify: { connected: true, store: 'Happy Puppy Supply' },
+          meta_ads: { connected: true, account: 'act_123456789' },
+          cj_dropshipping: { connected: true, apiKey: 'CJ5604***' },
+          ai: { connected: true, provider: 'OpenRouter', model: 'Kimi K2.5' },
+          github: { connected: true, user: 'happypuppy-dev' },
+          vercel: { connected: true, team: 'happypuppy' },
+        })
+        return
+      }
 
-      {/* Onboarding Banner */}
-      {!onboardingComplete && storeData && (
-        <Card className="bg-gradient-to-r from-violet-500/20 to-pink-500/20 border-violet-500/30">
-          <CardContent className="p-4 flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-full bg-violet-500/20 flex items-center justify-center">
-                <Rocket className="w-5 h-5 text-violet-400" />
-              </div>
-              <div>
-                <h3 className="text-white font-medium">Complete Store Setup</h3>
-                <p className="text-sm text-slate-300">
-                  6 steps • 3 minutes • Unlock AI automation tools
-                </p>
-              </div>
+      // Load real integrations
+      const { data: creds } = await supabase
+        .from('store_credentials')
+        .select('*')
+        .eq('store_id', storeId)
+
+      const { data: aiConfig } = await supabase.from('ai_configs').select('*').single()
+      const { data: githubConfig } = await supabase.from('user_credentials').select('*').eq('type', 'github').single()
+      const { data: vercelConfig } = await supabase.from('user_credentials').select('*').eq('type', 'vercel').single()
+
+      setIntegrations({
+        shopify: { connected: !!creds?.find((c: any) => c.type === 'shopify') },
+        meta_ads: { connected: !!creds?.find((c: any) => c.type === 'meta_ads') },
+        cj_dropshipping: { connected: !!creds?.find((c: any) => c.type === 'cj_dropshipping') },
+        ai: { connected: !!aiConfig, provider: aiConfig?.provider, model: aiConfig?.model },
+        github: { connected: !!githubConfig },
+        vercel: { connected: !!vercelConfig },
+      })
+    } catch (error) {
+      console.error('Failed to load integrations:', error)
+    }
+  }
+
+  const handleConnect = (type: string) => {
+    setActiveModal(type)
+    // For now, just log - modals would be implemented separately
+    console.log('Connect:', type)
+  }
+
+  const handleEdit = (type: string, credentials: any) => {
+    setActiveModal(type)
+    console.log('Edit:', type, credentials)
+  }
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="w-8 h-8 border-2 border-violet-500 border-t-transparent rounded-full animate-spin" />
+      </div>
+    )
+  }
+
+  if (!store) {
+    return (
+      <div className="flex flex-col items-center justify-center h-64 space-y-4">
+        <div className="w-16 h-16 rounded-2xl bg-violet-500/20 flex items-center justify-center">
+          <Store className="w-8 h-8 text-violet-400" />
+        </div>
+        <h1 className="text-2xl font-bold text-white">Welcome to ShoppDropp</h1>
+        <p className="text-slate-400 text-center max-w-md">
+          You don't have any stores yet. Create your first store to get started with AI-powered dropshipping.
+        </p>
+        <Link href="/app/stores/new">
+          <Button className="bg-violet-600 hover:bg-violet-500">
+            Create Your First Store
+          </Button>
+        </Link>
+      </div>
+    )
+  }
+
+  return (
+    <div className="space-y-8">
+      {/* Demo Banner */}
+      {store.name === 'Happy Puppy Supply' && (
+        <div className="p-4 rounded-xl bg-gradient-to-r from-violet-500/20 to-pink-500/20 border border-violet-500/30">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-lg bg-violet-500/30 flex items-center justify-center">
+              <Sparkles className="w-5 h-5 text-violet-300" />
             </div>
-            <Link
-              href={`/app/onboarding?storeId=${storeData.id}&storeName=${encodeURIComponent(storeData.name)}`}
-            >
-              <Button className="bg-violet-600 hover:bg-violet-500 text-white">
-                Start Setup
-                <Sparkles className="w-4 h-4 ml-2" />
-              </Button>
-            </Link>
-          </CardContent>
-        </Card>
+            <div>
+              <h3 className="font-semibold text-white">Demo Store</h3>
+              <p className="text-sm text-slate-400">
+                This is a demo showing all features. Connect a real store to use actual integrations.
+              </p>
+            </div>
+          </div>
+        </div>
       )}
 
-      {/* Stats Grid */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <StatCard
-          title="Revenue"
-          value={`$${stats.revenue.toLocaleString()}`}
-          change="+12%"
-          icon={DollarSign}
-          color="green"
-        />
-        <StatCard
-          title="Orders"
-          value={stats.orders.toString()}
-          change="+8%"
-          icon={ShoppingCart}
-          color="blue"
-        />
-        <StatCard
-          title="Products"
-          value={stats.products.toString()}
-          change="Active"
-          icon={Package}
-          color="violet"
-        />
-        <StatCard
-          title="Conversion"
-          value={`${stats.conversion}%`}
-          change="+2.1%"
-          icon={TrendingUp}
-          color="orange"
-        />
-      </div>
-
-      {/* Main Content */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Quick Actions */}
-        <Card className="lg:col-span-2 bg-[#111118] border-white/10">
-          <CardHeader>
-            <CardTitle className="text-white">Quick Actions</CardTitle>
-          </CardHeader>
-          <CardContent className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-            <QuickAction icon={Package} label="Add Product" href="/app/products/new" />
-            <QuickAction icon={Megaphone} label="Create Ad" href="/app/ads/new" />
-            <QuickAction icon={Zap} label="Run Agent" href="/app/ai-agent" />
-            <QuickAction icon={Store} label="New Store" href="/app/stores/new" />
-          </CardContent>
-        </Card>
-
-        {/* System Status */}
-        <Card className="bg-[#111118] border-white/10">
-          <CardHeader>
-            <CardTitle className="text-white">System Status</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            <StatusItem name="Supabase" status="connected" />
-            <StatusItem name="VPS API" status={vpsConnected ? 'connected' : 'disconnected'} />
-            <StatusItem name="Shopify" status="pending" />
-            <StatusItem name="Meta Ads" status="pending" />
-            <StatusItem name="AutoDS" status="pending" />
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Recent Activity */}
-      <Card className="bg-[#111118] border-white/10">
-        <CardHeader>
-          <CardTitle className="text-white">Recent Activity</CardTitle>
-        </CardHeader>
-        <CardContent>
-          {loading ? (
-            <div className="text-slate-400 text-center py-8">Loading...</div>
-          ) : activities.length === 0 ? (
-            <div className="text-slate-400 text-center py-8">
-              No activity yet. Start by adding a product or creating a project.
-            </div>
-          ) : (
-            <div className="space-y-3">
-              {activities.map((activity) => (
-                <div
-                  key={activity.id}
-                  className="flex items-center gap-3 p-3 rounded-lg bg-white/5"
-                >
-                  {activity.status === 'success' ? (
-                    <CheckCircle2 className="w-5 h-5 text-green-400" />
-                  ) : activity.status === 'error' ? (
-                    <AlertCircle className="w-5 h-5 text-red-400" />
-                  ) : (
-                    <Clock className="w-5 h-5 text-yellow-400" />
-                  )}
-                  <div className="flex-1">
-                    <p className="text-sm text-white">{activity.message}</p>
-                    <p className="text-xs text-slate-500">{activity.time}</p>
-                  </div>
-                  <Badge
-                    variant="outline"
-                    className="text-xs capitalize border-white/10 text-slate-400"
-                  >
-                    {activity.type}
-                  </Badge>
-                </div>
-              ))}
-            </div>
-          )}
-        </CardContent>
-      </Card>
-    </div>
-  )
-}
-
-function StatCard({
-  title,
-  value,
-  change,
-  icon: Icon,
-  color,
-}: {
-  title: string
-  value: string
-  change: string
-  icon: any
-  color: string
-}) {
-  const colors: Record<string, string> = {
-    green: 'from-green-500/20 to-green-600/10 border-green-500/30 text-green-400',
-    blue: 'from-blue-500/20 to-blue-600/10 border-blue-500/30 text-blue-400',
-    violet: 'from-violet-500/20 to-violet-600/10 border-violet-500/30 text-violet-400',
-    orange: 'from-orange-500/20 to-orange-600/10 border-orange-500/30 text-orange-400',
-  }
-
-  return (
-    <Card className={`bg-gradient-to-br ${colors[color]} border`}>
-      <CardContent className="p-4">
-        <div className="flex items-center justify-between">
-          <Icon className="w-5 h-5 opacity-70" />
-          <span className="text-xs">{change}</span>
+      {/* Store Header */}
+      <div className="flex items-center gap-4">
+        <div className="w-16 h-16 bg-violet-500/20 rounded-xl flex items-center justify-center">
+          <Store className="w-8 h-8 text-violet-400" />
         </div>
-        <p className="text-2xl font-bold text-white mt-2">{value}</p>
-        <p className="text-xs opacity-70">{title}</p>
-      </CardContent>
-    </Card>
-  )
-}
+        <div>
+          <h1 className="text-2xl font-bold text-white">{store.name}</h1>
+          <a 
+            href={store.url || '#'} 
+            target="_blank" 
+            rel="noopener noreferrer" 
+            className="text-slate-400 hover:text-violet-400 transition-colors"
+          >
+            {store.url?.replace('https://', '') || 'No URL configured'}
+          </a>
+        </div>
+      </div>
 
-function QuickAction({ icon: Icon, label, href }: { icon: any; label: string; href: string }) {
-  return (
-    <a
-      href={href}
-      className="flex flex-col items-center gap-2 p-4 rounded-lg bg-white/5 hover:bg-white/10 transition-colors group"
-    >
-      <Icon className="w-6 h-6 text-violet-400 group-hover:text-violet-300" />
-      <span className="text-sm text-slate-300 group-hover:text-white">{label}</span>
-    </a>
-  )
-}
+      {/* Integrations */}
+      <StoreIntegrations
+        storeId={store.id}
+        integrations={integrations}
+        onConnectShopify={() => handleConnect('shopify')}
+        onConnectMeta={() => handleConnect('meta')}
+        onConnectCJ={() => handleConnect('cj')}
+        onConfigureAI={() => handleConnect('ai')}
+        onConnectGitHub={() => handleConnect('github')}
+        onConnectVercel={() => handleConnect('vercel')}
+        onEditShopify={(creds) => handleEdit('shopify', creds)}
+        onEditMeta={(creds) => handleEdit('meta', creds)}
+        onEditCJ={(creds) => handleEdit('cj', creds)}
+        onEditAI={(creds) => handleEdit('ai', creds)}
+        onEditGitHub={(creds) => handleEdit('github', creds)}
+        onEditVercel={(creds) => handleEdit('vercel', creds)}
+      />
 
-function StatusItem({ name, status }: { name: string; status: 'connected' | 'disconnected' | 'pending' }) {
-  const colors = {
-    connected: 'bg-green-500',
-    disconnected: 'bg-red-500',
-    pending: 'bg-yellow-500',
-  }
+      {/* Meta Ads Performance Section */}
+      {integrations.meta_ads.connected && (
+        <div className="mt-8">
+          <h2 className="text-xl font-bold text-white mb-4 flex items-center gap-2">
+            <svg className="w-5 h-5 text-blue-400" fill="currentColor" viewBox="0 0 24 24">
+              <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/>
+            </svg>
+            Meta Ads Performance
+          </h2>
 
-  return (
-    <div className="flex items-center justify-between p-2 rounded bg-white/5">
-      <span className="text-sm text-white">{name}</span>
-      <div className="flex items-center gap-2">
-        <div className={`w-2 h-2 rounded-full ${colors[status]}`} />
-        <span className="text-xs text-slate-400 capitalize">{status}</span>
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+            {/* AI Queued Ads */}
+            <div className="p-4 rounded-xl bg-blue-500/10 border border-blue-500/20">
+              <div className="flex items-center justify-between mb-3">
+                <h3 className="font-medium text-white flex items-center gap-2">
+                  <Bot className="w-4 h-4 text-blue-400" />
+                  AI Queued Ads
+                </h3>
+                <span className="px-2 py-1 rounded-full bg-blue-500/30 text-blue-300 text-xs">3 Pending</span>
+              </div>
+              <div className="space-y-2">
+                <div className="p-2 rounded-lg bg-white/5 flex items-center justify-between">
+                  <span className="text-sm text-slate-300">Summer Collection Promo</span>
+                  <span className="text-xs text-slate-500">Created 2h ago</span>
+                </div>
+                <div className="p-2 rounded-lg bg-white/5 flex items-center justify-between">
+                  <span className="text-sm text-slate-300">Flash Sale Retargeting</span>
+                  <span className="text-xs text-slate-500">Created 5h ago</span>
+                </div>
+                <div className="p-2 rounded-lg bg-white/5 flex items-center justify-between">
+                  <span className="text-sm text-slate-300">Abandoned Cart Recovery</span>
+                  <span className="text-xs text-slate-500">Created 8h ago</span>
+                </div>
+              </div>
+              <Button size="sm" className="w-full mt-3 bg-blue-600/50 hover:bg-blue-600">
+                Review & Launch
+              </Button>
+            </div>
+
+            {/* Current Performance */}
+            <div className="p-4 rounded-xl bg-white/5 border border-white/10">
+              <h3 className="font-medium text-white mb-3 flex items-center gap-2">
+                <TrendingUp className="w-4 h-4 text-green-400" />
+                Current Performance
+              </h3>
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2 text-slate-400">
+                    <Eye className="w-4 h-4" />
+                    <span className="text-sm">Impressions</span>
+                  </div>
+                  <span className="text-white font-medium">47.2K</span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2 text-slate-400">
+                    <MousePointer className="w-4 h-4" />
+                    <span className="text-sm">CTR</span>
+                  </div>
+                  <span className="text-green-400 font-medium">3.8% ↑</span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2 text-slate-400">
+                    <DollarSign className="w-4 h-4" />
+                    <span className="text-sm">ROAS</span>
+                  </div>
+                  <span className="text-green-400 font-medium">4.2x ↑</span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2 text-slate-400">
+                    <TrendingUp className="w-4 h-4" />
+                    <span className="text-sm">Spend</span>
+                  </div>
+                  <span className="text-white font-medium">$1,247</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Actionable Items */}
+            <div className="p-4 rounded-xl bg-amber-500/10 border border-amber-500/20">
+              <h3 className="font-medium text-white mb-3 flex items-center gap-2">
+                <AlertCircle className="w-4 h-4 text-amber-400" />
+                Actionable Items
+              </h3>
+              <div className="space-y-2">
+                <div className="flex items-start gap-2">
+                  <CheckCircle className="w-4 h-4 text-amber-400 mt-0.5 flex-shrink-0" />
+                  <span className="text-sm text-slate-300">Increase budget on &quot;Summer Sale&quot; campaign (+23% ROAS)</span>
+                </div>
+                <div className="flex items-start gap-2">
+                  <CheckCircle className="w-4 h-4 text-amber-400 mt-0.5 flex-shrink-0" />
+                  <span className="text-sm text-slate-300">Pause underperforming ad set (0.8% CTR)</span>
+                </div>
+                <div className="flex items-start gap-2">
+                  <CheckCircle className="w-4 h-4 text-amber-400 mt-0.5 flex-shrink-0" />
+                  <span className="text-sm text-slate-300">Test new creative for retargeting audience</span>
+                </div>
+              </div>
+              <Button size="sm" className="w-full mt-3 bg-amber-600/50 hover:bg-amber-600">
+                Apply Suggestions
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Quick Actions */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <Link href="/app/ai-agent">
+          <div className="p-4 rounded-xl bg-gradient-to-r from-violet-500/10 to-pink-500/10 border border-violet-500/20 hover:border-violet-500/40 transition-all cursor-pointer">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-lg bg-violet-500/20 flex items-center justify-center">
+                <Bot className="w-5 h-5 text-violet-400" />
+              </div>
+              <div>
+                <h3 className="font-medium text-white">AI Agent</h3>
+                <p className="text-xs text-slate-400">Chat with your automation assistant</p>
+              </div>
+            </div>
+          </div>
+        </Link>
+        
+        <Link href="/app/products">
+          <div className="p-4 rounded-xl bg-white/5 border border-white/10 hover:border-white/20 transition-all cursor-pointer">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-lg bg-blue-500/20 flex items-center justify-center">
+                <Store className="w-5 h-5 text-blue-400" />
+              </div>
+              <div>
+                <h3 className="font-medium text-white">Products</h3>
+                <p className="text-xs text-slate-400">Manage your product catalog</p>
+              </div>
+            </div>
+          </div>
+        </Link>
+        
+        <Link href="/app/ads">
+          <div className="p-4 rounded-xl bg-white/5 border border-white/10 hover:border-white/20 transition-all cursor-pointer">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-lg bg-green-500/20 flex items-center justify-center">
+                <TrendingUp className="w-5 h-5 text-green-400" />
+              </div>
+              <div>
+                <h3 className="font-medium text-white">Ads</h3>
+                <p className="text-xs text-slate-400">Manage advertising campaigns</p>
+              </div>
+            </div>
+          </div>
+        </Link>
       </div>
     </div>
-  )
-}
-
-// Icons for QuickAction
-function Megaphone(props: any) {
-  return (
-    <svg
-      xmlns="http://www.w3.org/2000/svg"
-      width="24"
-      height="24"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      {...props}
-    >
-      <path d="m3 11 18-5v12L3 14v-3z" />
-      <path d="M11.6 16.8a3 3 0 1 1-5.8-1.6" />
-    </svg>
-  )
-}
-
-function Zap(props: any) {
-  return (
-    <svg
-      xmlns="http://www.w3.org/2000/svg"
-      width="24"
-      height="24"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      {...props}
-    >
-      <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
-    </svg>
   )
 }
