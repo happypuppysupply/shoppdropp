@@ -24,7 +24,8 @@ import {
   FileText,
   Database,
   Zap,
-  Clock
+  Clock,
+  Trash2
 } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import { ActivityLog, type Activity } from '@/components/agent/ActivityLog'
@@ -84,6 +85,7 @@ export default function AIAgentPage() {
   const [onboardingComplete, setOnboardingComplete] = useState(true)
   const [activities, setActivities] = useState<Activity[]>([])
   const [totalToolsUsed, setTotalToolsUsed] = useState(0)
+  const [loadingMessages, setLoadingMessages] = useState(true)
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://shoppdropp-api.onrender.com'
 
@@ -107,9 +109,10 @@ export default function AIAgentPage() {
     scrollToBottom()
   }, [messages, activities])
 
-  // Load context on mount
+  // Load context and messages on mount
   useEffect(() => {
     loadContext()
+    loadMessages()
   }, [])
 
   // Check onboarding status after context loads
@@ -166,6 +169,94 @@ export default function AIAgentPage() {
       console.error('Failed to load context:', error)
     } finally {
       setLoadingContext(false)
+    }
+  }
+
+  async function loadMessages() {
+    try {
+      setLoadingMessages(true)
+      const token = await getAuthToken()
+      if (!token) {
+        setLoadingMessages(false)
+        return
+      }
+
+      const response = await fetch(`${API_URL}/api/ai-chat/messages?limit=100`, {
+        headers: { 'Authorization': `Bearer ${token}` },
+      })
+
+      if (response.ok) {
+        const data = await response.json()
+        if (data.messages && data.messages.length > 0) {
+          // Convert database messages to UI format
+          const loadedMessages = data.messages.map((msg: any) => ({
+            role: msg.role,
+            content: msg.content,
+            timestamp: new Date(msg.created_at).toLocaleTimeString(),
+          }))
+          setMessages(loadedMessages)
+        }
+      }
+    } catch (error) {
+      console.error('Failed to load messages:', error)
+    } finally {
+      setLoadingMessages(false)
+    }
+  }
+
+  async function saveMessage(role: string, content: string, metadata: any = {}) {
+    try {
+      const token = await getAuthToken()
+      if (!token) return
+
+      await fetch(`${API_URL}/api/ai-chat/messages`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          role,
+          content,
+          metadata,
+        }),
+      })
+    } catch (error) {
+      console.error('Failed to save message:', error)
+    }
+  }
+
+  async function clearMessages() {
+    try {
+      const token = await getAuthToken()
+      if (!token) return
+
+      const response = await fetch(`${API_URL}/api/ai-chat/messages`, {
+        method: 'DELETE',
+        headers: { 'Authorization': `Bearer ${token}` },
+      })
+
+      if (response.ok) {
+        // Reset to welcome message
+        setMessages([
+          { 
+            role: 'assistant', 
+            content: `ShoppDropp AI Agent ready. I can execute dropshipping tasks like product research, catalog sync, price optimization, and ad management.\n\nTo build your Facebook Ads effectively, I need to understand your store. Select your main product category:`,
+            timestamp: new Date().toLocaleTimeString(),
+            formData: {
+              type: 'cards',
+              options: CATEGORIES.map(cat => ({
+                id: cat.id,
+                label: cat.label,
+                icon: cat.icon,
+                description: cat.description
+              }))
+            }
+          },
+        ])
+      }
+    } catch (error) {
+      console.error('Failed to clear messages:', error)
     }
   }
 
@@ -233,6 +324,9 @@ export default function AIAgentPage() {
     const newMessages: Message[] = [...messages, { role: 'user', content: userMessage, timestamp }]
     setMessages(newMessages)
 
+    // Save user message to database
+    await saveMessage('user', userMessage)
+
     // Simulate activity for the task
     simulateActivity(userMessage)
 
@@ -278,6 +372,9 @@ export default function AIAgentPage() {
       }
 
       setMessages([...newMessages, assistantMessage])
+
+      // Save assistant message to database
+      await saveMessage('assistant', data.response)
 
       if (data.command_executed) {
         simulateActivity('Executing command: ' + data.command_executed.status)
@@ -355,17 +452,23 @@ export default function AIAgentPage() {
 
       setMessages(prev => [...prev, assistantMessage])
 
+      // Save assistant message to database
+      await saveMessage('assistant', data.response)
+
       if (data.command_executed) {
         simulateActivity('Executing command: ' + data.command_executed.status)
         loadContext()
       }
     } catch (error: any) {
       console.error('Selection processing error:', error)
+      const errorContent = `Error: ${error.message || 'Something went wrong. Please try again.'}`
       setMessages(prev => [...prev, {
         role: 'assistant',
-        content: `Error: ${error.message || 'Something went wrong. Please try again.'}`,
+        content: errorContent,
         timestamp: new Date().toLocaleTimeString()
       }])
+      // Save error message too
+      await saveMessage('assistant', errorContent)
     } finally {
       setLoading(false)
     }
@@ -440,6 +543,17 @@ export default function AIAgentPage() {
           </div>
           
           <div className="flex items-center gap-2">
+            {messages.length > 1 && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={clearMessages}
+                className="border-red-500/30 text-red-400 hover:bg-red-500/20 hover:text-red-300"
+              >
+                <Trash2 className="w-3 h-3 mr-1" />
+                Clear Chat
+              </Button>
+            )}
             {totalToolsUsed > 0 && (
               <Badge variant="outline" className="border-violet-500/30 text-violet-300">
                 <Wrench className="w-3 h-3 mr-1" />
